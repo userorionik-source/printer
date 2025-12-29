@@ -660,6 +660,408 @@ body {
   color: #764ba2;
 }
 
+/* Print Queue Styles */
+.queue-controls {
+  margin-bottom: 15px;
+}
+
+.queue-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.queue-count {
+  font-weight: bold;
+  color: #333;
+}
+
+.print-status {
+  font-size: 14px;
+}
+
+.print-status.printing {
+  color: #ff9800;
+  animation: pulse 1.5s infinite;
+}
+
+.print-status.idle {
+  color: #4CAF50;
+}
+
+.delay-slider {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.delay-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.delay-help {
+  font-size: 12px;
+  color: #666;
+  padding: 2px 8px;
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+.btn-clear {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.btn-clear:hover {
+  background: #c82333 !important;
+}
+
+.btn-clear:disabled {
+  background: #e9ecef !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
+}
+
+/* Animation for printing status */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Print queue info in footer */
+.app-footer p {
+  margin: 5px 0;
+}
+
+/* Environment and Hosted Mode Styles */
+.environment-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 4px 12px;
+  background: #667eea;
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.environment-info {
+  margin-bottom: 15px;
+}
+
+.env-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.env-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 10px;
+  color: #856404;
+  font-size: 13px;
+  margin: 10px 0;
+}
+
+.mode-note {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-left: 5px;
+}
+
+.hosted-notice {
+  background: #e7f1ff;
+  border: 1px solid #cfe2ff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 15px;
+}
+
+.hosted-notice p {
+  margin: 0 0 8px 0;
+  color: #084298;
+  font-size: 14px;
+}
+
+.btn-install {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.btn-install:hover {
+  background: linear-gradient(135deg, #218838 0%, #1ba87e 100%) !important;
+}
+
+/* Enhanced Agent Instructions */
+.instructions-intro {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.instructions-tabs {
+  display: flex;
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  color: #666;
+}
+
+.tab.active {
+  border-bottom-color: #667eea;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.btn-download {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  padding: 12px 24px;
+  margin: 10px 0;
+}
+
+.download-icon {
+  font-size: 20px;
+}
+
+.os-links {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.os-links a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.os-links a:hover {
+  background: #f8f9fa;
+  border-color: #667eea;
+}
+
+.agent-info {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  margin-top: 10px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.custom-connection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.custom-connection h5 {
+  margin-bottom: 10px;
+  color: #495057;
+}
+
+/* Demo printer list */
+.demo-printer-list {
+  margin: 15px 0;
+}
+
+.printer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.printer-item.demo {
+  border-left: 4px solid #ffc107;
+}
+
+.printer-status.ready {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.no-printers {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 12px;
+  color: #856404;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* Environment status */
+.environment-status {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.status-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.status-value {
+  font-weight: bold;
+}
+
+.status-value.local {
+  color: #28a745;
+}
+
+.status-value.hosted {
+  color: #007bff;
+}
+
+.status-value.detected {
+  color: #28a745;
+}
+
+.status-value.not-detected {
+  color: #dc3545;
+}
+
+.status-value.demo {
+  color: #ffc107;
+}
+
+/* Demo features */
+.demo-features {
+  margin: 15px 0;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.feature-icon {
+  font-size: 16px;
+}
+
+/* Text actions */
+.text-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
+/* Log actions */
+.log-actions {
+  margin-top: 10px;
+  text-align: right;
+}
+
+/* Footer enhancements */
+.footer-content {
+  text-align: center;
+}
+
+.env-indicator {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.env-indicator.local {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.env-indicator.hosted {
+  background: #cce5ff;
+  color: #004085;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .environment-badge {
+    position: relative;
+    top: 0;
+    right: 0;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+  
+  .header-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .os-links {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .main-content {
