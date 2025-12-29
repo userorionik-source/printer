@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './App.css';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 function App() {
-  const [serverUrl, setServerUrl] = useState('ws://localhost:9978');
+  // Agent connection settings - try local agent first, fallback to demo
+  const [agentDetected, setAgentDetected] = useState(false);
+  const [connectionMode, setConnectionMode] = useState('auto'); // 'auto', 'agent', 'demo'
+  const [serverUrl, setServerUrl] = useState('ws://127.0.0.1:9978'); // Fixed port to match print-server.js
   const [token, setToken] = useState('supersecret');
   const [isConnected, setIsConnected] = useState(false);
   const [healthInfo, setHealthInfo] = useState(null);
@@ -50,30 +52,123 @@ Issued (UTC):    2025-11-18 03:50:01
   const [logs, setLogs] = useState([]);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [requestId, setRequestId] = useState(1);
+  const [showAgentInstructions, setShowAgentInstructions] = useState(false);
   
   const ws = useRef(null);
+  const agentDetectionTimeoutRef = useRef(null);
 
-  const addLog = (message, type = 'info') => {
+  const addLog = useCallback((message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [
       { id: Date.now(), message, type, timestamp },
       ...prev.slice(0, 19)
     ]);
-  };
+  }, []);
 
-  const connectWebSocket = () => {
+  // Detect if agent is running
+  const detectAgent = useCallback(() => {
+    addLog('Detecting local agent...', 'info');
+    
+    // Clear any existing timeout
+    if (agentDetectionTimeoutRef.current) {
+      clearTimeout(agentDetectionTimeoutRef.current);
+    }
+    
+    // Try to connect to agent
+    const testWs = new WebSocket(`ws://127.0.0.1:9978?token=${token}`);
+    
+    // Set timeout for agent detection
+    agentDetectionTimeoutRef.current = setTimeout(() => {
+      if (testWs.readyState !== WebSocket.OPEN) {
+        testWs.close();
+        setAgentDetected(false);
+        addLog('Local agent not detected', 'warning');
+        
+        // If in auto mode and agent not found, show instructions
+        if (connectionMode === 'auto') {
+          setShowAgentInstructions(true);
+        }
+      }
+    }, 2000);
+    
+    testWs.onopen = () => {
+      clearTimeout(agentDetectionTimeoutRef.current);
+      setAgentDetected(true);
+      setShowAgentInstructions(false);
+      addLog('Local agent detected!', 'success');
+      
+      // Send test message to verify full connection
+      testWs.send(JSON.stringify({
+        type: 'health',
+        requestId: 'detect',
+        payload: {}
+      }));
+      
+      setTimeout(() => {
+        testWs.close();
+        // Now connect with main WebSocket
+        connectWebSocket();
+      }, 500);
+    };
+    
+    testWs.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'health_response') {
+          addLog(`Agent verified: ${data.payload.platform}`, 'success');
+        }
+      } catch (error) {
+        console.error('Error parsing test message:', error);
+      }
+    };
+    
+    testWs.onerror = () => {
+      clearTimeout(agentDetectionTimeoutRef.current);
+      testWs.close();
+      setAgentDetected(false);
+      
+      if (connectionMode === 'auto' || connectionMode === 'agent') {
+        setShowAgentInstructions(true);
+      }
+    };
+    
+    testWs.onclose = () => {
+      // Clean up
+      if (agentDetectionTimeoutRef.current) {
+        clearTimeout(agentDetectionTimeoutRef.current);
+      }
+    };
+  }, [addLog, connectionMode, token]);
+
+  const connectWebSocket = useCallback(() => {
     if (ws.current) {
       ws.current.close();
     }
 
-    addLog(`Connecting to ${serverUrl}...`, 'info');
+    let url;
+    if (connectionMode === 'demo') {
+      // Demo mode - use mock server or local simulation
+      url = 'ws://127.0.0.1:9978?token=demo'; // We'll handle demo responses locally
+    } else {
+      // Agent mode - connect to local agent
+      url = `ws://127.0.0.1:9978?token=${token}`;
+    }
     
-    ws.current = new WebSocket(`${serverUrl}?token=${token}`);
+    addLog(`Connecting to ${connectionMode === 'demo' ? 'demo server' : 'local agent'}...`, 'info');
+    
+    ws.current = new WebSocket(url);
     
     ws.current.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
-      addLog('Connected to print server', 'success');
+      
+      if (connectionMode === 'demo') {
+        addLog('Connected to demo mode (simulated)', 'success');
+      } else {
+        addLog('Connected to local print agent', 'success');
+      }
+      
+      // Send immediate health check
       sendHealthCheck();
     };
     
@@ -96,19 +191,28 @@ Issued (UTC):    2025-11-18 03:50:01
     ws.current.onerror = (error) => {
       console.error('WebSocket error:', error);
       setIsConnected(false);
-      addLog('Connection error', 'error');
+      
+      if (connectionMode !== 'demo') {
+        addLog('Failed to connect to local agent', 'error');
+        // Try to detect agent again
+        if (connectionMode === 'agent') {
+          setTimeout(detectAgent, 1000);
+        }
+      } else {
+        addLog('Failed to connect to demo server', 'error');
+      }
     };
-  };
+  }, [connectionMode, token, addLog, detectAgent]);
 
-  const sendMessage = (message) => {
+  const sendMessage = useCallback((message) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
       return true;
     }
     return false;
-  };
+  }, []);
 
-  const handleWebSocketMessage = (data) => {
+  const handleWebSocketMessage = useCallback((data) => {
     console.log('Received:', data);
     setLastResponse(data);
 
@@ -144,10 +248,15 @@ Issued (UTC):    2025-11-18 03:50:01
       case 'error':
         addLog(`Error: ${data.payload.message}`, 'error');
         break;
+        
+      default:
+        // Handle any other message types
+        console.log('Unhandled message type:', data.type);
+        break;
     }
-  };
+  }, [addLog, selectedPrinter]);
 
-  const sendHealthCheck = () => {
+  const sendHealthCheck = useCallback(() => {
     const reqId = requestId.toString();
     setRequestId(prev => prev + 1);
     
@@ -160,10 +269,10 @@ Issued (UTC):    2025-11-18 03:50:01
     } else {
       addLog('Not connected to server', 'error');
     }
-  };
+  }, [sendMessage, requestId, addLog]);
 
-  const handlePrintText = () => {
-    if (!selectedPrinter) {
+  const handlePrintText = useCallback(() => {
+    if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('Please select a printer first', 'warning');
       return;
     }
@@ -172,6 +281,24 @@ Issued (UTC):    2025-11-18 03:50:01
     setRequestId(prev => prev + 1);
     
     setIsLoading(true);
+    
+    if (connectionMode === 'demo') {
+      // Simulate print for demo mode
+      setTimeout(() => {
+        addLog('Print simulated successfully (demo mode)', 'success');
+        setIsLoading(false);
+        setLastResponse({
+          type: 'print_response',
+          requestId: reqId,
+          payload: {
+            success: true,
+            message: 'Printed to simulated printer (DEMO MODE)'
+          }
+        });
+      }, 1000);
+      return;
+    }
+    
     if (sendMessage({
       type: 'print_text',
       requestId: reqId,
@@ -183,13 +310,12 @@ Issued (UTC):    2025-11-18 03:50:01
       addLog(`Printing to ${selectedPrinter}...`, 'info');
     } else {
       addLog('Not connected to server', 'error');
+      setIsLoading(false);
     }
-    
-    setTimeout(() => setIsLoading(false), 1000);
-  };
+  }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage, textToPrint]);
 
-  const handleTestPrint = () => {
-    if (!selectedPrinter) {
+  const handleTestPrint = useCallback(() => {
+    if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('Please select a printer first', 'warning');
       return;
     }
@@ -198,6 +324,24 @@ Issued (UTC):    2025-11-18 03:50:01
     setRequestId(prev => prev + 1);
     
     setIsLoading(true);
+    
+    if (connectionMode === 'demo') {
+      // Simulate test print for demo mode
+      setTimeout(() => {
+        addLog('Test print simulated (demo mode)', 'success');
+        setIsLoading(false);
+        setLastResponse({
+          type: 'test_print_response',
+          requestId: reqId,
+          payload: {
+            success: true,
+            message: 'Test print sent (DEMO MODE)'
+          }
+        });
+      }, 1000);
+      return;
+    }
+    
     if (sendMessage({
       type: 'test_print',
       requestId: reqId,
@@ -208,13 +352,12 @@ Issued (UTC):    2025-11-18 03:50:01
       addLog(`Sending test print to ${selectedPrinter}...`, 'info');
     } else {
       addLog('Not connected to server', 'error');
+      setIsLoading(false);
     }
-    
-    setTimeout(() => setIsLoading(false), 1000);
-  };
+  }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
-  const handleOpenCashDrawer = () => {
-    if (!selectedPrinter) {
+  const handleOpenCashDrawer = useCallback(() => {
+    if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('Please select a printer first', 'warning');
       return;
     }
@@ -223,6 +366,24 @@ Issued (UTC):    2025-11-18 03:50:01
     setRequestId(prev => prev + 1);
     
     setIsLoading(true);
+    
+    if (connectionMode === 'demo') {
+      // Simulate cash drawer for demo mode
+      setTimeout(() => {
+        addLog('Cash drawer simulated (demo mode)', 'success');
+        setIsLoading(false);
+        setLastResponse({
+          type: 'cash_drawer_response',
+          requestId: reqId,
+          payload: {
+            success: true,
+            message: 'Cash drawer opened (DEMO MODE)'
+          }
+        });
+      }, 1000);
+      return;
+    }
+    
     if (sendMessage({
       type: 'open_cash_drawer',
       requestId: reqId,
@@ -233,14 +394,13 @@ Issued (UTC):    2025-11-18 03:50:01
       addLog(`Opening cash drawer on ${selectedPrinter}...`, 'info');
     } else {
       addLog('Not connected to server', 'error');
+      setIsLoading(false);
     }
-    
-    setTimeout(() => setIsLoading(false), 1000);
-  };
+  }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
-  const handleRefreshPrinters = () => {
+  const handleRefreshPrinters = useCallback(() => {
     sendHealthCheck();
-  };
+  }, [sendHealthCheck]);
 
   const getLogTypeClass = (type) => {
     switch (type) {
@@ -249,6 +409,37 @@ Issued (UTC):    2025-11-18 03:50:01
       case 'warning': return 'log-warning';
       default: return 'log-info';
     }
+  };
+
+  const switchToDemoMode = useCallback(() => {
+    setConnectionMode('demo');
+    setShowAgentInstructions(false);
+    
+    if (ws.current) {
+      ws.current.close();
+    }
+    
+    setTimeout(() => {
+      connectWebSocket();
+    }, 500);
+  }, [connectWebSocket]);
+
+  const switchToAgentMode = useCallback(() => {
+    setConnectionMode('agent');
+    setShowAgentInstructions(false);
+    
+    if (ws.current) {
+      ws.current.close();
+    }
+    
+    setTimeout(() => {
+      detectAgent();
+    }, 500);
+  }, [detectAgent]);
+
+  const downloadAgent = () => {
+    // Update this URL to your actual agent download location
+    window.open('https://github.com/yourusername/aaravpos-agent/releases/latest', '_blank');
   };
 
   // Auto-refresh effect
@@ -262,27 +453,128 @@ Issued (UTC):    2025-11-18 03:50:01
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh, isConnected]);
+  }, [autoRefresh, isConnected, sendHealthCheck]);
 
-  // Cleanup on unmount
+  // Detect agent on initial load
   useEffect(() => {
+    detectAgent();
+    
     return () => {
       if (ws.current) {
         ws.current.close();
       }
+      if (agentDetectionTimeoutRef.current) {
+        clearTimeout(agentDetectionTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [detectAgent]);
+
+  // Reconnect when connection mode changes
+  useEffect(() => {
+    if (connectionMode !== 'auto' && !showAgentInstructions) {
+      connectWebSocket();
+    }
+  }, [connectionMode, showAgentInstructions, connectWebSocket]);
 
   return (
     <div className="app-container">
       {/* Header */}
       <header className="app-header">
         <h1>AaravPOS Print Server Tester</h1>
-        <div className="status-indicator">
-          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
-          <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+        <div className="header-controls">
+          <div className="mode-selector">
+            <button 
+              className={`mode-btn ${connectionMode === 'agent' ? 'active' : ''}`}
+              onClick={switchToAgentMode}
+              disabled={!agentDetected && connectionMode !== 'agent'}
+            >
+              <span className="mode-indicator agent"></span>
+              Local Agent
+            </button>
+            <button 
+              className={`mode-btn ${connectionMode === 'demo' ? 'active' : ''}`}
+              onClick={switchToDemoMode}
+            >
+              <span className="mode-indicator demo"></span>
+              Demo Mode
+            </button>
+          </div>
+          <div className="status-indicator">
+            <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+            <span>
+              {isConnected ? (
+                connectionMode === 'demo' ? 'Demo Connected' : 'Agent Connected'
+              ) : 'Disconnected'}
+            </span>
+          </div>
         </div>
       </header>
+
+      {/* Agent Instructions Modal */}
+      {showAgentInstructions && (
+        <div className="agent-instructions-modal">
+          <div className="instructions-card">
+            <h2>🔌 Local Agent Required</h2>
+            <p>To use physical printers and cash drawers, you need to install the AaravPOS Agent on your computer.</p>
+            
+            <div className="instructions-steps">
+              <div className="step">
+                <div className="step-number">1</div>
+                <div className="step-content">
+                  <h4>Download the Agent</h4>
+                  <p>Download and install the AaravPOS Agent for your operating system.</p>
+                  <button className="btn btn-primary" onClick={downloadAgent}>
+                    📥 Download Agent
+                  </button>
+                </div>
+              </div>
+              
+              <div className="step">
+                <div className="step-number">2</div>
+                <div className="step-content">
+                  <h4>Install & Run</h4>
+                  <p>Install the application. It will run in your system tray (taskbar).</p>
+                  <p className="note">The agent runs on <code>ws://127.0.0.1:9978</code></p>
+                  <p className="note">Token: <code>supersecret</code></p>
+                </div>
+              </div>
+              
+              <div className="step">
+                <div className="step-number">3</div>
+                <div className="step-content">
+                  <h4>Connect</h4>
+                  <p>Once installed, refresh this page or click "Try Again" below.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="instructions-actions">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowAgentInstructions(false);
+                  switchToDemoMode();
+                }}
+              >
+                🎭 Use Demo Mode Instead
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={detectAgent}
+              >
+                🔄 Try Again
+              </button>
+            </div>
+            
+            <button 
+              className="close-instructions"
+              onClick={() => setShowAgentInstructions(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="main-content">
         {/* Left Panel - Controls */}
@@ -290,33 +582,54 @@ Issued (UTC):    2025-11-18 03:50:01
           <div className="card">
             <h3>Connection Settings</h3>
             <div className="form-group">
-              <label>Server URL</label>
-              <input
-                type="text"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                className="form-control"
-              />
+              <label>Connection Mode</label>
+              <div className="mode-display">
+                <span className={`mode-badge ${connectionMode}`}>
+                  {connectionMode === 'demo' ? 'DEMO MODE' : 'LOCAL AGENT'}
+                </span>
+                {connectionMode === 'demo' && (
+                  <span className="demo-note">(Printing is simulated)</span>
+                )}
+              </div>
             </div>
-            <div className="form-group">
-              <label>Token</label>
-              <input
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                className="form-control"
-              />
-            </div>
+            {connectionMode !== 'demo' && (
+              <>
+                <div className="form-group">
+                  <label>Agent URL</label>
+                  <input
+                    type="text"
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
+                    className="form-control"
+                    disabled={!agentDetected}
+                  />
+                  <small className="form-help">Agent runs on ws://127.0.0.1:9978</small>
+                </div>
+                <div className="form-group">
+                  <label>Token</label>
+                  <input
+                    type="password"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    className="form-control"
+                    disabled={!agentDetected}
+                  />
+                  <small className="form-help">Default token: supersecret</small>
+                </div>
+              </>
+            )}
             <div className="button-group">
               <button 
                 onClick={connectWebSocket}
                 className="btn btn-primary"
+                disabled={connectionMode !== 'demo' && !agentDetected}
               >
-                Connect
+                {isConnected ? 'Reconnect' : 'Connect'}
               </button>
               <button 
                 onClick={sendHealthCheck}
                 className="btn btn-secondary"
+                disabled={!isConnected}
               >
                 Health Check
               </button>
@@ -330,29 +643,40 @@ Issued (UTC):    2025-11-18 03:50:01
                 onClick={handleRefreshPrinters}
                 className="btn-icon"
                 title="Refresh printers"
+                disabled={!isConnected || connectionMode === 'demo'}
               >
                 ↻
               </button>
             </div>
-            <div className="form-group">
-              <label>Select Printer</label>
-              <select
-                value={selectedPrinter}
-                onChange={(e) => setSelectedPrinter(e.target.value)}
-                className="form-control"
-              >
-                <option value="">-- Select a printer --</option>
-                {printers.map((printer) => (
-                  <option key={printer.name} value={printer.name}>
-                    {printer.name} {printer.isDefault ? '(Default)' : ''} - {printer.status}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {selectedPrinter && (
-              <div className="selected-printer">
-                Selected: <strong>{selectedPrinter}</strong>
+            {connectionMode === 'demo' ? (
+              <div className="demo-printer-info">
+                <p>📋 <strong>Demo Printer</strong></p>
+                <p className="demo-note">Printing is simulated. No physical printer required.</p>
               </div>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label>Select Printer</label>
+                  <select
+                    value={selectedPrinter}
+                    onChange={(e) => setSelectedPrinter(e.target.value)}
+                    className="form-control"
+                    disabled={!isConnected || printers.length === 0}
+                  >
+                    <option value="">-- Select a printer --</option>
+                    {printers.map((printer) => (
+                      <option key={printer.name} value={printer.name}>
+                        {printer.name} {printer.isDefault ? '(Default)' : ''} - {printer.status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedPrinter && (
+                  <div className="selected-printer">
+                    Selected: <strong>{selectedPrinter}</strong>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -361,21 +685,21 @@ Issued (UTC):    2025-11-18 03:50:01
             <div className="action-buttons">
               <button
                 onClick={handlePrintText}
-                disabled={!selectedPrinter || isLoading}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || isLoading || !isConnected}
                 className="btn btn-action btn-print"
               >
                 {isLoading ? 'Processing...' : 'Print Text'}
               </button>
               <button
                 onClick={handleTestPrint}
-                disabled={!selectedPrinter || isLoading}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || isLoading || !isConnected}
                 className="btn btn-action btn-test"
               >
                 Test Print
               </button>
               <button
                 onClick={handleOpenCashDrawer}
-                disabled={!selectedPrinter || isLoading}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || isLoading || !isConnected}
                 className="btn btn-action btn-cash"
               >
                 Open Cash Drawer
@@ -387,11 +711,26 @@ Issued (UTC):    2025-11-18 03:50:01
                   type="checkbox"
                   checked={autoRefresh}
                   onChange={(e) => setAutoRefresh(e.target.checked)}
+                  disabled={!isConnected}
                 />
                 Auto-refresh health info
               </label>
             </div>
           </div>
+          
+          {connectionMode === 'demo' && (
+            <div className="card demo-notice">
+              <h3>🎭 Demo Mode</h3>
+              <p>You're using demo mode. Print actions are simulated.</p>
+              <p>To use physical printers:</p>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowAgentInstructions(true)}
+              >
+                Install Local Agent
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Middle Panel - Text Editor */}
@@ -407,6 +746,7 @@ Issued (UTC):    2025-11-18 03:50:01
             <div className="text-stats">
               <span>Characters: {textToPrint.length}</span>
               <span>Lines: {textToPrint.split('\n').length}</span>
+              {connectionMode === 'demo' && <span className="demo-badge">DEMO</span>}
             </div>
           </div>
         </div>
@@ -431,11 +771,13 @@ Issued (UTC):    2025-11-18 03:50:01
                   <span>Printers Found:</span>
                   <span className="printer-count">{healthInfo.totalPrinters}</span>
                 </div>
-                <div className="status-row">
-                  <span>Default Printer:</span>
-                  <span>{healthInfo.defaultPrinter || 'None'}</span>
-                </div>
-                {healthInfo.printers && healthInfo.printers.length > 0 && (
+                {connectionMode !== 'demo' && (
+                  <div className="status-row">
+                    <span>Default Printer:</span>
+                    <span>{healthInfo.defaultPrinter || 'None'}</span>
+                  </div>
+                )}
+                {connectionMode !== 'demo' && healthInfo.printers && healthInfo.printers.length > 0 && (
                   <div className="printer-list">
                     <h4>Available Printers:</h4>
                     <ul>
@@ -452,7 +794,9 @@ Issued (UTC):    2025-11-18 03:50:01
               </div>
             ) : (
               <div className="no-status">
-                Connect to server to see status
+                {connectionMode === 'demo' 
+                  ? 'Connect to demo server to see status' 
+                  : 'Connect to agent to see status'}
               </div>
             )}
           </div>
@@ -487,7 +831,22 @@ Issued (UTC):    2025-11-18 03:50:01
       </div>
 
       <footer className="app-footer">
-        <p>Electron Print Server Tester • Connect to ws://localhost:9978</p>
+        <p>
+          AaravPOS Print Tester • 
+          {connectionMode === 'demo' 
+            ? ' Demo Mode (simulated printing)' 
+            : ` Agent Mode: ${agentDetected ? 'Detected' : 'Not detected'}`}
+        </p>
+        <p className="footer-note">
+          {!agentDetected && connectionMode !== 'demo' && (
+            <button 
+              className="btn-link"
+              onClick={() => setShowAgentInstructions(true)}
+            >
+              Install local agent for physical printing
+            </button>
+          )}
+        </p>
       </footer>
     </div>
   );
