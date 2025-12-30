@@ -884,17 +884,17 @@ Issued (UTC):    2025-11-18 03:50:01
                     <a href="#" onClick={(e) => {
                       e.preventDefault();
                       addLog('Windows download selected', 'info');
-                      window.open('https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-Windows.exe', '_blank');
+                      window.open('https://drive.google.com/file/d/1vHbTMnDgaF-UovS9KEWtiEiPeuVAVXMm/view?usp=sharing', '_blank');
                     }}>Windows (.exe)</a>
                     <a href="#" onClick={(e) => {
                       e.preventDefault();
                       addLog('macOS download selected', 'info');
-                      window.open('https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-macOS.dmg', '_blank');
+                      window.open('https://drive.google.com/file/d/1vHbTMnDgaF-UovS9KEWtiEiPeuVAVXMm/view?usp=sharing', '_blank');
                     }}>macOS (.dmg)</a>
                     <a href="#" onClick={(e) => {
                       e.preventDefault();
                       addLog('Linux download selected', 'info');
-                      window.open('https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-Linux.AppImage', '_blank');
+                      window.open('https://drive.google.com/file/d/1vHbTMnDgaF-UovS9KEWtiEiPeuVAVXMm/view?usp=sharing', '_blank');
                     }}>Linux (.AppImage)</a>
                   </div>
                 </div>
