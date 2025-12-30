@@ -1,5 +1,14 @@
+// App.js - Production Ready Version with Environment Variables
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
+
+// Environment configuration
+const ENV_CONFIG = {
+  defaultWsUrl: process.env.REACT_APP_WS_URL || 'ws://127.0.0.1:9978',
+  defaultToken: process.env.REACT_APP_TOKEN || 'supersecret',
+  agentDownloadUrl: process.env.REACT_APP_AGENT_DOWNLOAD_URL || 'https://github.com/yourusername/aaravpos-agent/releases/latest',
+  enableDebugMode: process.env.REACT_APP_DEBUG === 'true'
+};
 
 // Job types
 const JOB_TYPES = {
@@ -8,7 +17,7 @@ const JOB_TYPES = {
   CASH_DRAWER: 'cash_drawer'
 };
 
-// Print Queue class
+// Print Queue class (same as before)
 class PrintQueue {
   constructor(onQueueUpdate) {
     this.queue = [];
@@ -109,17 +118,32 @@ class PrintQueue {
 }
 
 function App() {
-  // Check if running on localhost or hosted
+  // Enhanced environment detection
   const isLocalhost = window.location.hostname === 'localhost' || 
                       window.location.hostname === '127.0.0.1' ||
                       window.location.hostname === '';
   
-  // Initial state based on environment
+  const isProduction = process.env.NODE_ENV === 'production';
+  const deployUrl = window.location.origin;
+  
+  // Log environment info in debug mode
+  useEffect(() => {
+    if (ENV_CONFIG.enableDebugMode) {
+      console.log('Environment:', {
+        isLocalhost,
+        isProduction,
+        deployUrl,
+        nodeEnv: process.env.NODE_ENV
+      });
+    }
+  }, [isLocalhost, isProduction, deployUrl]);
+  
+  // State (same as before, but using ENV_CONFIG)
   const [agentDetected, setAgentDetected] = useState(false);
   const [connectionMode, setConnectionMode] = useState(isLocalhost ? 'auto' : 'demo');
-  const [serverUrl, setServerUrl] = useState('ws://127.0.0.1:9978');
+  const [serverUrl, setServerUrl] = useState(ENV_CONFIG.defaultWsUrl);
   const [customAgentUrl, setCustomAgentUrl] = useState('');
-  const [token, setToken] = useState('supersecret');
+  const [token, setToken] = useState(ENV_CONFIG.defaultToken);
   const [isConnected, setIsConnected] = useState(false);
   const [healthInfo, setHealthInfo] = useState(null);
   const [printers, setPrinters] = useState([]);
@@ -127,7 +151,8 @@ function App() {
   const [textToPrint, setTextToPrint] = useState(`            AARAVPOS STORE
 ========================================
 Invoice:      8F0A8-BE4/2025-26/00002
-Date:         2025-11-18 03:50:01
+Date:         ${new Date().toLocaleDateString()}
+Time:         ${new Date().toLocaleTimeString()}
 Order ID:     979ddc0c-c784-4016-978
 Status:       PAID
 Currency:     USD
@@ -204,7 +229,7 @@ Issued (UTC):    2025-11-18 03:50:01
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [
       { id: Date.now(), message, type, timestamp },
-      ...prev.slice(0, 49) // Show more logs
+      ...prev.slice(0, 49)
     ]);
   }, []);
 
@@ -737,26 +762,35 @@ Issued (UTC):    2025-11-18 03:50:01
 
   // Handle agent download
   const downloadAgent = () => {
-    // Determine user's OS
     const userAgent = navigator.userAgent.toLowerCase();
-    let downloadUrl = '';
+    const platform = navigator.platform.toLowerCase();
     
-    if (userAgent.includes('win')) {
-      downloadUrl = 'https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-Windows.exe';
-    } else if (userAgent.includes('mac')) {
-      downloadUrl = 'https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-macOS.dmg';
-    } else if (userAgent.includes('linux')) {
-      downloadUrl = 'https://github.com/yourusername/aaravpos-agent/releases/latest/download/AaravPOS-Agent-Linux.AppImage';
-    } else {
-      downloadUrl = 'https://github.com/yourusername/aaravpos-agent/releases/latest';
+    let downloadUrl = ENV_CONFIG.agentDownloadUrl;
+    let detectedOS = 'Unknown';
+    
+    if (userAgent.includes('win') || platform.includes('win')) {
+      downloadUrl = `${ENV_CONFIG.agentDownloadUrl}/download/AaravPOS-Agent-Windows.exe`;
+      detectedOS = 'Windows';
+    } else if (userAgent.includes('mac') || platform.includes('mac')) {
+      downloadUrl = `${ENV_CONFIG.agentDownloadUrl}/download/AaravPOS-Agent-macOS.dmg`;
+      detectedOS = 'macOS';
+    } else if (userAgent.includes('linux') || platform.includes('linux')) {
+      downloadUrl = `${ENV_CONFIG.agentDownloadUrl}/download/AaravPOS-Agent-Linux.AppImage`;
+      detectedOS = 'Linux';
     }
     
-    // Open download in new tab
+    addLog(`Detected OS: ${detectedOS}. Opening download...`, 'info');
     window.open(downloadUrl, '_blank');
-    
-    // Add log
     addLog('Opening agent download page...', 'info');
   };
+
+  // Add environment badge to footer
+  const renderEnvironmentInfo = () => (
+    <div className="environment-info-badge">
+      <span>Environment: {isProduction ? '🌐 Production' : '🔧 Development'}</span>
+      {!isLocalhost && <span className="hosted-badge">Hosted at {deployUrl}</span>}
+    </div>
+  );
 
   // Auto-refresh effect
   useEffect(() => {
@@ -1441,6 +1475,7 @@ Thank you for your business!`)}
               <span>Running in demo mode. Install agent for physical printing.</span>
             )}
           </p>
+          {renderEnvironmentInfo()}
         </div>
       </footer>
     </div>
