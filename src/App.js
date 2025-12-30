@@ -6,7 +6,7 @@ import './App.css';
 const ENV_CONFIG = {
   defaultWsUrl: process.env.REACT_APP_WS_URL || 'ws://127.0.0.1:9978',
   defaultToken: process.env.REACT_APP_TOKEN || 'supersecret',
-  agentDownloadUrl: process.env.REACT_APP_AGENT_DOWNLOAD_URL || 'https://drive.google.com/file/d/1hai4ayzrxNN02JwVmRpC95c9XtJW8cpf/view?usp=sharing',
+  agentDownloadUrl: process.env.REACT_APP_AGENT_DOWNLOAD_URL || 'https://drive.google.com/drive/folders/1vGgfEBHUyD7YLhUw6UtzY4_OSeZnhA9a?usp=sharing',
   enableDebugMode: process.env.REACT_APP_DEBUG === 'true'
 };
 
