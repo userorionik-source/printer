@@ -20,6 +20,21 @@ const JOB_TYPES = {
   BARCODE: 'barcode'
 };
 
+// Demo barcode value (fixed for Print Barcode button)
+const DEMO_BARCODE = 'INV-20251118';
+
+// Default demo text
+const DEMO_TEXT = `
+            AARAVPOS STORE
+========================================
+Invoice: DEMO/00001
+========================================
+             BARCODE
+${DEMO_BARCODE}
+========================================
+Thank you for using AaravPOS!
+`;
+
 // Print Queue class with enhanced functionality
 class PrintQueue {
   constructor(onQueueUpdate) {
@@ -188,7 +203,7 @@ function App() {
 
   // State - NO AUTO-CONNECT INITIALIZATION
   const [agentDetected, setAgentDetected] = useState(false);
-  const [connectionMode, setConnectionMode] = useState('manual'); // Changed from 'auto' to 'manual'
+  const [connectionMode, setConnectionMode] = useState('manual');
   const [serverUrl, setServerUrl] = useState(ENV_CONFIG.defaultWsUrl);
   const [customAgentUrl, setCustomAgentUrl] = useState('');
   const [token, setToken] = useState(ENV_CONFIG.defaultToken);
@@ -227,7 +242,7 @@ Due:                           0.00
 CASH via LOCAL - SUCCEEDED    580.00
 ----------------------------------------
              BARCODE
-INV-20251118-035012-7AB50493
+${DEMO_BARCODE}
 ----------------------------------------
 Final Invoice ID: ed1d7c84-2595-xxxx
 Series:          8F0A8-BE4
@@ -304,6 +319,18 @@ Issued (UTC):    2025-11-18 03:50:01
       { id: Date.now(), message, type, timestamp },
       ...prev.slice(0, 49)
     ]);
+  }, []);
+
+  // Barcode extraction function (REQUIRED)
+  const extractBarcodeFromText = useCallback((text) => {
+    const lines = text.split('\n').map(l => l.trim());
+    const barcodeIndex = lines.findIndex(line => line === 'BARCODE');
+
+    if (barcodeIndex !== -1 && lines[barcodeIndex + 1]) {
+      return lines[barcodeIndex + 1].trim();
+    }
+
+    return DEMO_BARCODE; // Fallback to demo barcode
   }, []);
 
   const stopJobs = useCallback(() => {
@@ -561,6 +588,20 @@ Issued (UTC):    2025-11-18 03:50:01
           addLog('Cash drawer simulated', 'success');
         }, 500);
         break;
+
+      case 'print_barcode':
+        setTimeout(() => {
+          handleWebSocketMessage({
+            type: 'print_response',
+            requestId: reqId,
+            payload: {
+              success: true,
+              message: `Barcode "${message.payload.barcode}" printed (DEMO MODE)`
+            }
+          });
+          addLog(`Barcode "${message.payload.barcode}" simulated`, 'success');
+        }, 700);
+        break;
     }
   }, [addLog]);
 
@@ -636,13 +677,58 @@ Issued (UTC):    2025-11-18 03:50:01
     }
   }, [connectionMode, requestId, addLog, handleDemoMessage]);
 
-  const handlePrintText = useCallback(async () => {
+  // 🧾 Print Barcode Button Handler - Prints ONLY barcode with demo value
+  const handlePrintBarcode = useCallback(() => {
     if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('⚠️ Please select a printer first', 'warning');
       return;
     }
 
     const job = async () => {
+      const reqId = requestId.toString();
+      setRequestId(prev => prev + 1);
+
+      return new Promise((resolve, reject) => {
+        if (sendMessage({
+          type: 'print_barcode',
+          requestId: reqId,
+          payload: {
+            printerName: selectedPrinter || 'Demo Printer',
+            barcode: DEMO_BARCODE, // Always use demo barcode
+            format: 'CODE128'
+          }
+        })) {
+          addLog(`🧾 Printing barcode only: ${DEMO_BARCODE}`, 'info');
+          resolve();
+        } else {
+          addLog('❌ Not connected to server', 'error');
+          reject(new Error('Not connected'));
+        }
+      });
+    };
+
+    if (printQueue.current) {
+      const queueJob = printQueue.current.add(
+        job,
+        JOB_TYPES.BARCODE,
+        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Barcode Only' }
+      );
+      addLog(`📝 Barcode-only job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
+    }
+  }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
+
+  // 🖨️ Print Text Button Handler - Prints receipt text + barcode derived from text
+  const handlePrintText = useCallback(async () => {
+    if (!selectedPrinter && connectionMode !== 'demo') {
+      addLog('⚠️ Please select a printer first', 'warning');
+      return;
+    }
+
+    // Extract barcode from current text
+    const barcodeValue = extractBarcodeFromText(textToPrint);
+
+    // Create job for printing text
+    const printTextJob = async () => {
       const reqId = requestId.toString();
       setRequestId(prev => prev + 1);
 
@@ -655,7 +741,32 @@ Issued (UTC):    2025-11-18 03:50:01
             text: textToPrint
           }
         })) {
-          addLog(`🖨️ Printing to ${selectedPrinter || 'Demo Printer'}...`, 'info');
+          addLog(`🖨️ Printing receipt text to ${selectedPrinter || 'Demo Printer'}...`, 'info');
+          resolve();
+        } else {
+          addLog('❌ Not connected to server', 'error');
+          reject(new Error('Not connected'));
+        }
+      });
+    };
+
+    // Create job for printing barcode (derived from text)
+    const printBarcodeJob = async () => {
+      const reqId = (parseInt(requestId) + 1).toString();
+      setRequestId(prev => prev + 1);
+
+      return new Promise((resolve, reject) => {
+        if (sendMessage({
+          type: 'print_barcode',
+          requestId: reqId,
+          payload: {
+            printerName: selectedPrinter || 'Demo Printer',
+            barcode: barcodeValue,
+            format: 'CODE128',
+            receiptText: textToPrint // Include receipt text for combined print
+          }
+        })) {
+          addLog(`🧾 Printing barcode derived from text: ${barcodeValue}`, 'info');
           resolve();
         } else {
           addLog('❌ Not connected to server', 'error');
@@ -665,14 +776,23 @@ Issued (UTC):    2025-11-18 03:50:01
     };
 
     if (printQueue.current) {
-      const queueJob = printQueue.current.add(
-        job,
+      // Add text print job
+      const textJob = printQueue.current.add(
+        printTextJob,
         JOB_TYPES.PRINT,
-        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Text' }
+        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Receipt Text' }
       );
-      addLog(`📝 Print job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
+      addLog(`📝 Receipt text job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
+
+      // Add barcode print job (after text)
+      const barcodeJob = printQueue.current.add(
+        printBarcodeJob,
+        JOB_TYPES.BARCODE,
+        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Derived Barcode' }
+      );
+      addLog(`📝 Derived barcode job added to queue (ID: ${barcodeJob.id.substring(0, 8)})`, 'info');
     }
-  }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage, textToPrint]);
+  }, [selectedPrinter, connectionMode, textToPrint, requestId, addLog, sendMessage, extractBarcodeFromText]);
 
   const handleTestPrint = useCallback(async () => {
     if (!selectedPrinter && connectionMode !== 'demo') {
@@ -748,56 +868,6 @@ Issued (UTC):    2025-11-18 03:50:01
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
-  const handlePrintBarcode = useCallback(async (barcodeValue) => {
-    if (!selectedPrinter && connectionMode !== 'demo') {
-      addLog('⚠️ Please select a printer first', 'warning');
-      return;
-    }
-
-    const job = async () => {
-      const reqId = requestId.toString();
-      setRequestId(prev => prev + 1);
-
-      return new Promise((resolve, reject) => {
-        if (sendMessage({
-          type: 'print_barcode',
-          requestId: reqId,
-          payload: {
-            printerName: selectedPrinter || 'Demo Printer',
-            receiptText: textToPrint, // Include the receipt text
-            barcode: barcodeValue,
-            format: 'CODE128'
-          }
-        })) {
-          addLog(`🏷️ Printing barcode: ${barcodeValue} with receipt`, 'info');
-          resolve();
-        } else {
-          reject(new Error('WebSocket not connected'));
-        }
-      });
-    };
-
-    if (printQueue.current) {
-      const queueJob = printQueue.current.add(
-        job,
-        JOB_TYPES.BARCODE,
-        {
-          printerName: selectedPrinter || 'Demo Printer',
-          barcode: barcodeValue,
-          type: 'Print Barcode'
-        }
-      );
-      addLog(`📝 Barcode job queued (${queueJob.id.substring(0, 8)})`, 'info');
-    }
-  }, [
-    selectedPrinter,
-    connectionMode,
-    requestId,
-    sendMessage,
-    addLog,
-    textToPrint  // Add textToPrint as dependency
-  ]);
-
   const handleRefreshPrinters = useCallback(() => {
     sendHealthCheck();
   }, [sendHealthCheck]);
@@ -867,6 +937,8 @@ Issued (UTC):    2025-11-18 03:50:01
         return { icon: '🧪', label: 'Test Print', color: 'test' };
       case JOB_TYPES.CASH_DRAWER:
         return { icon: '💰', label: 'Cash Drawer', color: 'cash' };
+      case JOB_TYPES.BARCODE:
+        return { icon: '🧾', label: 'Barcode', color: 'barcode' };
       default:
         return { icon: '🖨️', label: type, color: 'default' };
     }
@@ -950,9 +1022,6 @@ Issued (UTC):    2025-11-18 03:50:01
       if (interval) clearInterval(interval);
     };
   }, [autoRefresh, isConnected, sendHealthCheck]);
-
-  // REMOVED ALL AUTO-CONNECT EFFECTS
-  // User must manually connect
 
   return (
     <div className="app-container">
@@ -1421,13 +1490,24 @@ Issued (UTC):    2025-11-18 03:50:01
             </div>
 
             <div className="action-buttons">
+              {/* 🖨️ Print Text Button (prints text + barcode derived from text) */}
               <button
                 onClick={handlePrintText}
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
                 className="btn btn-action btn-print"
               >
-                Print Text
+                🖨️ Print Text
               </button>
+
+              {/* 🧾 Print Barcode Button (prints ONLY demo barcode) */}
+              <button
+                onClick={handlePrintBarcode}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
+                className="btn btn-action btn-barcode"
+              >
+                🧾 Print Barcode
+              </button>
+
               <button
                 onClick={handleTestPrint}
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
@@ -1441,13 +1521,6 @@ Issued (UTC):    2025-11-18 03:50:01
                 className="btn btn-action btn-cash"
               >
                 Open Drawer
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => handlePrintBarcode(`INV-${Date.now().toString(36).toUpperCase()}`)}
-                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
-              >
-                🧾 Print Barcode
               </button>
 
               <QueueManagementPanel
@@ -1545,6 +1618,10 @@ Issued (UTC):    2025-11-18 03:50:01
         <div className="text-panel">
           <div className="card">
             <h3>Text to Print</h3>
+            <div className="text-info">
+              <p><strong>Note:</strong> Changing text will update the barcode printed with "Print Text" button</p>
+              <p><strong>Demo Barcode (fixed):</strong> {DEMO_BARCODE}</p>
+            </div>
             <textarea
               value={textToPrint}
               onChange={(e) => setTextToPrint(e.target.value)}
@@ -1560,7 +1637,9 @@ Issued (UTC):    2025-11-18 03:50:01
             <div className="text-actions">
               <button
                 className="btn btn-sm"
-                onClick={() => setTextToPrint(`            AARAVPOS STORE
+                onClick={() => {
+                  const extractedBarcode = extractBarcodeFromText(textToPrint);
+                  setTextToPrint(`            AARAVPOS STORE
 ========================================
 Invoice:      ${Date.now().toString(36).toUpperCase()}
 Date:         ${new Date().toLocaleDateString()}
@@ -1569,9 +1648,13 @@ Time:         ${new Date().toLocaleTimeString()}
 Item 1                     x1   25.00
 Item 2                     x2   15.00
 ========================================
+BARCODE
+${extractedBarcode || DEMO_BARCODE}
+========================================
 TOTAL:                        55.00
 ========================================
-Thank you for your business!`)}
+Thank you for your business!`);
+                }}
               >
                 Load Sample Receipt
               </button>
