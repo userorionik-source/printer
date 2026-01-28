@@ -11,6 +11,17 @@ const QueueManagementPanel = () => {
         failed: 0
     });
 
+    const sortJobsByStatus = (a, b) => {
+        const priority = {
+            Printing: 0,
+            Queued: 1,
+            Completed: 2,
+            Paused: 3,
+            Cancelled: 4
+        };
+        return (priority[a.status] ?? 99) - (priority[b.status] ?? 99);
+    };
+
     const [jobs, setJobs] = useState([
         { id: 19, status: 'Queued', timestamp: 'just now' },
         { id: 18, status: 'Queued', timestamp: 'just now' },
@@ -52,9 +63,22 @@ const QueueManagementPanel = () => {
             processingIntervalRef.current = null;
         }
 
+        // Pause all jobs that are Queued or Processing
         setJobs(prev => prev.map(job =>
-            job.status === 'Processing' ? { ...job, status: 'Paused' } : job
+            (job.status === 'Processing' || job.status === 'Queued') 
+                ? { ...job, status: 'Paused' } 
+                : job
         ));
+    }, []);
+
+    const resumeQueue = useCallback(() => {
+        // Resume all paused jobs back to Queued
+        setJobs(prev => prev.map(job =>
+            job.status === 'Paused' 
+                ? { ...job, status: 'Queued', timestamp: 'just now' } 
+                : job
+        ));
+        setIsQueueProcessing(true);
     }, []);
 
     const clearQueue = useCallback(() => {
@@ -183,7 +207,7 @@ const QueueManagementPanel = () => {
     return (
         <div className="queue-management-panel">
             <div className="queue-header">
-                <button className="generate-jobs-btn" onClick={generateTestJobs} >
+                <button className="generate-jobs-btn" onClick={generateTestJobs}>
                     Generate 20 Test Jobs
                 </button>
 
@@ -211,15 +235,27 @@ const QueueManagementPanel = () => {
                 <button
                     className="control-btn stop-btn"
                     onClick={stopJobs}
+                    title="Stop Queue Processing"
+                    disabled={!isQueueProcessing}
                 >
-                    <StopCircle size={18} />
-                    Stop Jobs
+                    <StopCircle size={16} />
+                    Stop Queue
+                </button>
+                <button
+                    className="control-btn resume-btn-bg"
+                    onClick={resumeQueue}
+                    title="Resume Queue Processing"
+                    disabled={isQueueProcessing}
+                >
+                    <PlayCircle size={16} />
+                    Resume Queue
                 </button>
                 <button
                     className="control-btn clear-btn"
                     onClick={clearQueue}
+                    title="Clear Completed Jobs"
                 >
-                    <XCircle size={18} />
+                    <XCircle size={16} />
                     Clear Queue
                 </button>
             </div>
@@ -229,8 +265,9 @@ const QueueManagementPanel = () => {
                     <thead>
                         <tr>
                             <th>Job #</th>
-                            <th>Queue</th>
-                            <th>Just now</th>
+                            <th>Status</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -245,36 +282,58 @@ const QueueManagementPanel = () => {
                                 </td>
                                 <td className="job-timestamp">{job.timestamp}</td>
                                 <td className="job-actions">
-                                    {job.status === 'Queued' || job.status === 'Processing' ? (
+                                    {job.status === 'Paused' ? (
+                                        <button
+                                            className="icon-btn resume-btn"
+                                            title="Resume Job"
+                                            onClick={() => {
+                                                setJobs(prev =>
+                                                    [...prev]
+                                                        .map(j =>
+                                                            j.id === job.id ? { ...j, status: 'Queued' } : j
+                                                        )
+                                                        .sort((a, b) => {
+                                                            if (a.status === 'Paused') return 1;
+                                                            if (b.status === 'Paused') return -1;
+                                                            return 0;
+                                                        })
+                                                );
+                                            }}
+                                        >
+                                            <PlayCircle size={16} />
+                                        </button>
+                                    ) : (
                                         <>
                                             <button
                                                 className="icon-btn pause-btn"
-                                                onClick={() => pauseJob(job.id)}
-                                                title="Pause job"
+                                                title="Pause Job"
+                                                onClick={() => {
+                                                    pauseJob(job.id);
+                                                    setJobs(prev =>
+                                                        [...prev]
+                                                            .map(j =>
+                                                                j.id === job.id ? { ...j, status: 'Paused' } : j
+                                                            )
+                                                            .sort((a, b) => {
+                                                                if (a.status === 'Paused') return 1;
+                                                                if (b.status === 'Paused') return -1;
+                                                                return 0;
+                                                            })
+                                                    );
+                                                }}
                                             >
                                                 <PauseCircle size={16} />
                                             </button>
+
                                             <button
                                                 className="icon-btn cancel-btn"
+                                                title="Cancel Job"
                                                 onClick={() => cancelJob(job.id)}
-                                                title="Cancel job"
                                             >
                                                 <XCircle size={16} />
                                             </button>
                                         </>
-                                    ) : job.status === 'Paused' ? (
-                                        <button
-                                            className="icon-btn resume-btn"
-                                            onClick={() => {
-                                                setJobs(prev => prev.map(j =>
-                                                    j.id === job.id ? { ...j, status: 'Queued' } : j
-                                                ));
-                                            }}
-                                            title="Resume job"
-                                        >
-                                            <PlayCircle size={16} />
-                                        </button>
-                                    ) : null}
+                                    )}
                                 </td>
                             </tr>
                         ))}

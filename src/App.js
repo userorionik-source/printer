@@ -16,7 +16,8 @@ const ENV_CONFIG = {
 const JOB_TYPES = {
   PRINT: 'print',
   TEST_PRINT: 'test_print',
-  CASH_DRAWER: 'cash_drawer'
+  CASH_DRAWER: 'cash_drawer',
+  BARCODE: 'barcode'
 };
 
 // Print Queue class with enhanced functionality
@@ -747,6 +748,56 @@ Issued (UTC):    2025-11-18 03:50:01
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
+  const handlePrintBarcode = useCallback(async (barcodeValue) => {
+    if (!selectedPrinter && connectionMode !== 'demo') {
+      addLog('⚠️ Please select a printer first', 'warning');
+      return;
+    }
+
+    const job = async () => {
+      const reqId = requestId.toString();
+      setRequestId(prev => prev + 1);
+
+      return new Promise((resolve, reject) => {
+        if (sendMessage({
+          type: 'print_barcode',
+          requestId: reqId,
+          payload: {
+            printerName: selectedPrinter || 'Demo Printer',
+            receiptText: textToPrint, // Include the receipt text
+            barcode: barcodeValue,
+            format: 'CODE128'
+          }
+        })) {
+          addLog(`🏷️ Printing barcode: ${barcodeValue} with receipt`, 'info');
+          resolve();
+        } else {
+          reject(new Error('WebSocket not connected'));
+        }
+      });
+    };
+
+    if (printQueue.current) {
+      const queueJob = printQueue.current.add(
+        job,
+        JOB_TYPES.BARCODE,
+        {
+          printerName: selectedPrinter || 'Demo Printer',
+          barcode: barcodeValue,
+          type: 'Print Barcode'
+        }
+      );
+      addLog(`📝 Barcode job queued (${queueJob.id.substring(0, 8)})`, 'info');
+    }
+  }, [
+    selectedPrinter,
+    connectionMode,
+    requestId,
+    sendMessage,
+    addLog,
+    textToPrint  // Add textToPrint as dependency
+  ]);
+
   const handleRefreshPrinters = useCallback(() => {
     sendHealthCheck();
   }, [sendHealthCheck]);
@@ -1391,6 +1442,14 @@ Issued (UTC):    2025-11-18 03:50:01
               >
                 Open Drawer
               </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => handlePrintBarcode(`INV-${Date.now().toString(36).toUpperCase()}`)}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
+              >
+                🧾 Print Barcode
+              </button>
+
               <QueueManagementPanel
                 queueStats={{
                   queue: queueStatus.queueSize,
