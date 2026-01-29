@@ -1,7 +1,5 @@
-// App.js - Manual Connection Version (No Auto-connect)
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StopCircle, XCircle, Loader2, Printer, Play, RefreshCw } from 'lucide-react';
-import QueueManagementPanel from './QueueManagementPanel';
+import { Search, StopCircle, XCircle, Loader2, Printer, Play, RefreshCw, Check, X, AlertTriangle, Square, Home, Globe, Barcode, FlaskConical, DollarSign, Timer, Download, Monitor, FileText, Hourglass, Rocket, Scissors, Tag, Theater, Server, Cpu, Shield, ClipboardCheck, Wifi, WifiOff, Settings, Info, Bell, AlertCircle, ChevronUp, ChevronDown, ExternalLink, HelpCircle, Cloud, CloudOff, Package, Archive } from 'lucide-react';
 import './App.css';
 
 // Environment configuration
@@ -336,14 +334,14 @@ Issued (UTC):    2025-11-18 03:50:01
   const stopJobs = useCallback(() => {
     if (printQueue.current) {
       printQueue.current.stop();
-      addLog('⏹️ Job processing stopped', 'warning');
+      addLog('Job processing stopped', 'warning');
     }
   }, [addLog]);
 
   const resumeJobs = useCallback(() => {
     if (printQueue.current) {
       printQueue.current.resume();
-      addLog('▶️ Queue processing resumed', 'success');
+      addLog('Queue processing resumed', 'success');
     }
   }, [addLog]);
 
@@ -368,7 +366,7 @@ Issued (UTC):    2025-11-18 03:50:01
           installed: true,
           detectedVia: 'manual'
         }));
-        addLog(`✅ Agent detected at ${testUrl}`, 'success');
+        addLog(`Agent detected at ${testUrl}`, 'success');
         resolve(testUrl);
       };
 
@@ -377,7 +375,7 @@ Issued (UTC):    2025-11-18 03:50:01
         testWs.close();
         setAgentDetected(false);
         setAgentStatus(prev => ({ ...prev, installed: false }));
-        addLog(`❌ No agent found at ${testUrl}`, 'error');
+        addLog(`No agent found at ${testUrl}`, 'error');
         reject(new Error('Agent not found'));
       };
 
@@ -385,7 +383,7 @@ Issued (UTC):    2025-11-18 03:50:01
       timeoutId = setTimeout(() => {
         testWs.close();
         setAgentDetected(false);
-        addLog('⏱️ Agent detection timeout', 'warning');
+        addLog('Agent detection timeout', 'warning');
         reject(new Error('Timeout'));
       }, 3000);
     });
@@ -412,7 +410,7 @@ Issued (UTC):    2025-11-18 03:50:01
     // Add token to URL
     const fullUrl = `${targetUrl}?token=${token}`;
 
-    addLog(`🔄 Connecting to: ${targetUrl}`, 'info');
+    addLog(`Connecting to: ${targetUrl}`, 'info');
     setConnectionStatus('connecting');
 
     try {
@@ -422,7 +420,7 @@ Issued (UTC):    2025-11-18 03:50:01
         console.log('WebSocket connected');
         setIsConnected(true);
         setConnectionStatus('connected');
-        addLog('✅ Connected to WebSocket server', 'success');
+        addLog('Connected to WebSocket server', 'success');
 
         // Send initial health check
         setTimeout(() => sendHealthCheck(), 100);
@@ -444,9 +442,9 @@ Issued (UTC):    2025-11-18 03:50:01
         setConnectionStatus('disconnected');
 
         if (event.code === 1006) {
-          addLog('❌ Connection failed - Check if agent is running', 'error');
+          addLog('Connection failed - Check if agent is running', 'error');
         } else {
-          addLog('⚠️ Disconnected from WebSocket server', 'warning');
+          addLog('Disconnected from WebSocket server', 'warning');
         }
       };
 
@@ -454,12 +452,12 @@ Issued (UTC):    2025-11-18 03:50:01
         console.error('WebSocket error:', error);
         setIsConnected(false);
         setConnectionStatus('error');
-        addLog('❌ WebSocket connection error', 'error');
+        addLog('WebSocket connection error', 'error');
       };
     } catch (error) {
       setIsConnected(false);
       setConnectionStatus('error');
-      addLog(`❌ Connection error: ${error.message}`, 'error');
+      addLog(`Connection error: ${error.message}`, 'error');
     }
   }, [token, customAgentUrl, serverUrl, addLog]);
 
@@ -483,13 +481,13 @@ Issued (UTC):    2025-11-18 03:50:01
   const connectDemoMode = useCallback(() => {
     disconnectWebSocket(); // Ensure any existing connection is closed
 
-    addLog('🎭 Starting demo mode (simulated printing)', 'info');
+    addLog('Starting demo mode (simulated printing)', 'info');
     setConnectionMode('demo');
     setConnectionStatus('demo');
 
     setTimeout(() => {
       setIsConnected(true);
-      addLog('✅ Demo mode connected', 'success');
+      addLog('Demo mode connected', 'success');
 
       // Simulate health response
       setTimeout(() => {
@@ -621,31 +619,31 @@ Issued (UTC):    2025-11-18 03:50:01
         if (data.payload.defaultPrinter && !selectedPrinter) {
           setSelectedPrinter(data.payload.defaultPrinter);
         }
-        addLog('✅ Health check completed', 'info');
+        addLog('Health check completed', 'info');
         break;
 
       case 'print_response':
-        addLog(`📄 Print: ${data.payload.message}`,
+        addLog(`Print: ${data.payload.message}`,
           data.payload.success ? 'success' : 'error');
         break;
 
       case 'test_print_response':
-        addLog(`🧪 Test print: ${data.payload.message}`,
+        addLog(`Test print: ${data.payload.message}`,
           data.payload.success ? 'success' : 'error');
         break;
 
       case 'cash_drawer_response':
-        addLog(`💰 Cash drawer: ${data.payload.message}`,
+        addLog(`Cash drawer: ${data.payload.message}`,
           data.payload.success ? 'success' : 'error');
         break;
 
       case 'error':
-        addLog(`❌ Error: ${data.payload.message}`, 'error');
+        addLog(`Error: ${data.payload.message}`, 'error');
         break;
 
       default:
         console.log('Unhandled message type:', data.type);
-        addLog(`ℹ️ Received: ${data.type}`, 'info');
+        addLog(`Received: ${data.type}`, 'info');
         break;
     }
   }, [addLog, selectedPrinter]);
@@ -658,7 +656,7 @@ Issued (UTC):    2025-11-18 03:50:01
     }
 
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      addLog('❌ Not connected to WebSocket server', 'error');
+      addLog('Not connected to WebSocket server', 'error');
       return;
     }
 
@@ -671,16 +669,16 @@ Issued (UTC):    2025-11-18 03:50:01
         requestId: reqId,
         payload: {}
       }));
-      addLog('🔄 Sending health check...', 'info');
+      addLog('Sending health check...', 'info');
     } catch (error) {
-      addLog(`❌ Failed to send health check: ${error.message}`, 'error');
+      addLog(`Failed to send health check: ${error.message}`, 'error');
     }
   }, [connectionMode, requestId, addLog, handleDemoMessage]);
 
-  // 🧾 Print Barcode Button Handler - Prints ONLY barcode with demo value
+  // Print Barcode Button Handler - Prints ONLY barcode with demo value
   const handlePrintBarcode = useCallback(() => {
     if (!selectedPrinter && connectionMode !== 'demo') {
-      addLog('⚠️ Please select a printer first', 'warning');
+      addLog('Please select a printer first', 'warning');
       return;
     }
 
@@ -698,10 +696,10 @@ Issued (UTC):    2025-11-18 03:50:01
             format: 'CODE128'
           }
         })) {
-          addLog(`🧾 Printing barcode only: ${DEMO_BARCODE}`, 'info');
+          addLog(`Printing barcode only: ${DEMO_BARCODE}`, 'info');
           resolve();
         } else {
-          addLog('❌ Not connected to server', 'error');
+          addLog('Not connected to server', 'error');
           reject(new Error('Not connected'));
         }
       });
@@ -713,14 +711,14 @@ Issued (UTC):    2025-11-18 03:50:01
         JOB_TYPES.BARCODE,
         { printerName: selectedPrinter || 'Demo Printer', type: 'Print Barcode Only' }
       );
-      addLog(`📝 Barcode-only job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
+      addLog(`Barcode-only job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
-  // 🖨️ Print Text Button Handler - Prints receipt text + barcode derived from text
+  // Print Text Button Handler - Prints receipt text + barcode derived from text
   const handlePrintText = useCallback(async () => {
     if (!selectedPrinter && connectionMode !== 'demo') {
-      addLog('⚠️ Please select a printer first', 'warning');
+      addLog('Please select a printer first', 'warning');
       return;
     }
 
@@ -741,10 +739,10 @@ Issued (UTC):    2025-11-18 03:50:01
             text: textToPrint
           }
         })) {
-          addLog(`🖨️ Printing receipt text to ${selectedPrinter || 'Demo Printer'}...`, 'info');
+          addLog(`Printing receipt text to ${selectedPrinter || 'Demo Printer'}...`, 'info');
           resolve();
         } else {
-          addLog('❌ Not connected to server', 'error');
+          addLog('Not connected to server', 'error');
           reject(new Error('Not connected'));
         }
       });
@@ -766,10 +764,10 @@ Issued (UTC):    2025-11-18 03:50:01
             receiptText: textToPrint // Include receipt text for combined print
           }
         })) {
-          addLog(`🧾 Printing barcode derived from text: ${barcodeValue}`, 'info');
+          addLog(`Printing barcode derived from text: ${barcodeValue}`, 'info');
           resolve();
         } else {
-          addLog('❌ Not connected to server', 'error');
+          addLog('Not connected to server', 'error');
           reject(new Error('Not connected'));
         }
       });
@@ -782,7 +780,7 @@ Issued (UTC):    2025-11-18 03:50:01
         JOB_TYPES.PRINT,
         { printerName: selectedPrinter || 'Demo Printer', type: 'Print Receipt Text' }
       );
-      addLog(`📝 Receipt text job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
+      addLog(`Receipt text job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
 
       // Add barcode print job (after text)
       const barcodeJob = printQueue.current.add(
@@ -790,13 +788,13 @@ Issued (UTC):    2025-11-18 03:50:01
         JOB_TYPES.BARCODE,
         { printerName: selectedPrinter || 'Demo Printer', type: 'Print Derived Barcode' }
       );
-      addLog(`📝 Derived barcode job added to queue (ID: ${barcodeJob.id.substring(0, 8)})`, 'info');
+      addLog(`Derived barcode job added to queue (ID: ${barcodeJob.id.substring(0, 8)})`, 'info');
     }
   }, [selectedPrinter, connectionMode, textToPrint, requestId, addLog, sendMessage, extractBarcodeFromText]);
 
   const handleTestPrint = useCallback(async () => {
     if (!selectedPrinter && connectionMode !== 'demo') {
-      addLog('⚠️ Please select a printer first', 'warning');
+      addLog('Please select a printer first', 'warning');
       return;
     }
 
@@ -812,10 +810,10 @@ Issued (UTC):    2025-11-18 03:50:01
             printerName: selectedPrinter || 'Demo Printer'
           }
         })) {
-          addLog(`🧪 Sending test print to ${selectedPrinter || 'Demo Printer'}...`, 'info');
+          addLog(`Sending test print to ${selectedPrinter || 'Demo Printer'}...`, 'info');
           resolve();
         } else {
-          addLog('❌ Not connected to server', 'error');
+          addLog('Not connected to server', 'error');
           reject(new Error('Not connected'));
         }
       });
@@ -827,13 +825,13 @@ Issued (UTC):    2025-11-18 03:50:01
         JOB_TYPES.TEST_PRINT,
         { printerName: selectedPrinter || 'Demo Printer', type: 'Test Print' }
       );
-      addLog(`📝 Test print job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
+      addLog(`Test print job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
   const handleOpenCashDrawer = useCallback(async () => {
     if (!selectedPrinter && connectionMode !== 'demo') {
-      addLog('⚠️ Please select a printer first', 'warning');
+      addLog('Please select a printer first', 'warning');
       return;
     }
 
@@ -849,10 +847,10 @@ Issued (UTC):    2025-11-18 03:50:01
             printerName: selectedPrinter || 'Demo Printer'
           }
         })) {
-          addLog(`💰 Opening cash drawer on ${selectedPrinter || 'Demo Printer'}...`, 'info');
+          addLog(`Opening cash drawer on ${selectedPrinter || 'Demo Printer'}...`, 'info');
           resolve();
         } else {
-          addLog('❌ Not connected to server', 'error');
+          addLog('Not connected to server', 'error');
           reject(new Error('Not connected'));
         }
       });
@@ -864,7 +862,7 @@ Issued (UTC):    2025-11-18 03:50:01
         JOB_TYPES.CASH_DRAWER,
         { printerName: selectedPrinter || 'Demo Printer', type: 'Open Cash Drawer' }
       );
-      addLog(`📝 Cash drawer job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
+      addLog(`Cash drawer job added to queue (ID: ${queueJob.id.substring(0, 8)})`, 'info');
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
@@ -875,7 +873,7 @@ Issued (UTC):    2025-11-18 03:50:01
   const clearPrintQueue = useCallback(() => {
     if (printQueue.current) {
       const cleared = printQueue.current.clear();
-      addLog(`🧹 Cleared ${cleared} queued job(s)`, 'info');
+      addLog(`Cleared ${cleared} queued job(s)`, 'info');
     }
   }, [addLog]);
 
@@ -883,7 +881,7 @@ Issued (UTC):    2025-11-18 03:50:01
     if (printQueue.current) {
       const cancelled = printQueue.current.cancelJob(jobId);
       if (cancelled) {
-        addLog(`❌ Cancelled queued job ${jobId.substring(0, 8)}`, 'warning');
+        addLog(`Cancelled queued job ${jobId.substring(0, 8)}`, 'warning');
       }
       return cancelled;
     }
@@ -894,7 +892,7 @@ Issued (UTC):    2025-11-18 03:50:01
     if (printQueue.current) {
       const cancelled = printQueue.current.cancelCurrent();
       if (cancelled) {
-        addLog('❌ Current job terminated', 'warning');
+        addLog('Current job terminated', 'warning');
       }
     }
   }, [addLog]);
@@ -907,7 +905,7 @@ Issued (UTC):    2025-11-18 03:50:01
         async () => {
           return new Promise(resolve => {
             setTimeout(() => {
-              addLog(`🧪 Test job ${i} executed`, 'info');
+              addLog(`Test job ${i} executed`, 'info');
               resolve();
             }, 500);
           });
@@ -917,7 +915,7 @@ Issued (UTC):    2025-11-18 03:50:01
       );
     }
 
-    addLog('🚀 Generated 20 test print jobs', 'success');
+    addLog('Generated 20 test print jobs', 'success');
   }, [addLog]);
 
   const getLogTypeClass = (type) => {
@@ -932,28 +930,54 @@ Issued (UTC):    2025-11-18 03:50:01
   const getJobTypeDisplay = (type) => {
     switch (type) {
       case JOB_TYPES.PRINT:
-        return { icon: '📄', label: 'Print', color: 'print' };
+        return { icon: <FileText size={16} />, label: 'Print', color: 'print' };
       case JOB_TYPES.TEST_PRINT:
-        return { icon: '🧪', label: 'Test Print', color: 'test' };
+        return { icon: <FlaskConical size={16} />, label: 'Test Print', color: 'test' };
       case JOB_TYPES.CASH_DRAWER:
-        return { icon: '💰', label: 'Cash Drawer', color: 'cash' };
+        return { icon: <DollarSign size={16} />, label: 'Cash Drawer', color: 'cash' };
       case JOB_TYPES.BARCODE:
-        return { icon: '🧾', label: 'Barcode', color: 'barcode' };
+        return { icon: <Barcode size={16} />, label: 'Barcode', color: 'barcode' };
       default:
-        return { icon: '🖨️', label: type, color: 'default' };
+        return { icon: <Printer size={16} />, label: type, color: 'default' };
     }
   };
 
   const getJobStatusDisplay = (job) => {
-    if (job.__kind === 'current') return '🔄 Processing';
+    if (job.__kind === 'current') return (
+      <span className="job-status-text">
+        <RefreshCw size={14} className="spinning" /> Processing
+      </span>
+    );
 
     switch (job.status) {
-      case 'queued': return '⏳ Queued';
-      case 'processing': return '🔄 Processing';
-      case 'completed': return '✅ Completed';
-      case 'failed': return '❌ Failed';
-      case 'cancelled': return '⚠️ Cancelled';
-      default: return job.status;
+      case 'queued': return (
+        <span className="job-status-text">
+          <Hourglass size={14} /> Queued
+        </span>
+      );
+      case 'processing': return (
+        <span className="job-status-text">
+          <Loader2 size={14} className="spinning" /> Processing
+        </span>
+      );
+      case 'completed': return (
+        <span className="job-status-text">
+          <Check size={14} /> Completed
+        </span>
+      );
+      case 'failed': return (
+        <span className="job-status-text">
+          <X size={14} /> Failed
+        </span>
+      );
+      case 'cancelled': return (
+        <span className="job-status-text">
+          <AlertTriangle size={14} /> Cancelled
+        </span>
+      );
+      default: return (
+        <span className="job-status-text">{job.status}</span>
+      );
     }
   };
 
@@ -997,15 +1021,15 @@ Issued (UTC):    2025-11-18 03:50:01
       detectedOS = 'Linux';
     }
 
-    addLog(`💻 Detected OS: ${detectedOS}. Opening download...`, 'info');
+    addLog(`Detected OS: ${detectedOS}. Opening download...`, 'info');
     window.open(downloadUrl, '_blank');
-    addLog('📥 Opening agent download page...', 'info');
+    addLog('Opening agent download page...', 'info');
   };
 
   // Add environment badge to footer
   const renderEnvironmentInfo = () => (
     <div className="environment-info-badge">
-      <span>Environment: {isProduction ? '🌐 Production' : '🔧 Development'}</span>
+      <span>Environment: {isProduction ? 'Production' : 'Development'}</span>
       {!isLocalhost && <span className="hosted-badge">Hosted at {deployUrl}</span>}
     </div>
   );
@@ -1026,9 +1050,13 @@ Issued (UTC):    2025-11-18 03:50:01
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>AaravPOS Print Server Tester</h1>
+        <div className="header-title">
+          <Printer size={24} />
+          <h1>AaravPOS Print Server Tester</h1>
+        </div>
         <div className="environment-badge">
-          {isLocalhost ? '🏠 Local' : '🌐 Hosted'}
+          {isLocalhost ? <Home size={14} /> : <Globe size={14} />}
+          {isLocalhost ? ' Local' : ' Hosted'}
         </div>
         <div className="header-controls">
           <div className="mode-selector">
@@ -1037,7 +1065,9 @@ Issued (UTC):    2025-11-18 03:50:01
               onClick={switchToAgentMode}
               disabled={connectionMode === 'agent'}
             >
-              <span className="mode-indicator agent"></span>
+              <span className="mode-indicator agent">
+                <Server size={12} />
+              </span>
               Manual Agent
             </button>
             <button
@@ -1045,18 +1075,36 @@ Issued (UTC):    2025-11-18 03:50:01
               onClick={switchToDemoMode}
               disabled={connectionMode === 'demo'}
             >
-              <span className="mode-indicator demo"></span>
+              <span className="mode-indicator demo">
+                <Theater size={12} />
+              </span>
               Demo Mode
             </button>
           </div>
           <div className="status-indicator">
             <span className={`status-dot ${getConnectionStatusColor()}`}></span>
             <span>
-              {connectionStatus === 'connected' ? 'Connected' :
-                connectionStatus === 'connecting' ? 'Connecting...' :
-                  connectionStatus === 'demo' ? 'Demo Mode' :
-                    connectionStatus === 'error' ? 'Connection Error' :
-                      'Disconnected'}
+              {connectionStatus === 'connected' ? (
+                <>
+                  <Wifi size={14} /> Connected
+                </>
+              ) : connectionStatus === 'connecting' ? (
+                <>
+                  <Loader2 size={14} className="spinning" /> Connecting...
+                </>
+              ) : connectionStatus === 'demo' ? (
+                <>
+                  <Theater size={14} /> Demo Mode
+                </>
+              ) : connectionStatus === 'error' ? (
+                <>
+                  <AlertCircle size={14} /> Connection Error
+                </>
+              ) : (
+                <>
+                  <WifiOff size={14} /> Disconnected
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -1066,7 +1114,10 @@ Issued (UTC):    2025-11-18 03:50:01
       {showAgentInstructions && (
         <div className="agent-instructions-modal">
           <div className="instructions-card">
-            <h2>🚀 AaravPOS Agent Setup</h2>
+            <div className="instructions-header">
+              <Package size={24} />
+              <h2>AaravPOS Agent Setup</h2>
+            </div>
             <p className="instructions-intro">
               To connect to physical printers and cash drawers, you need to install the AaravPOS Agent on your computer.
             </p>
@@ -1075,10 +1126,10 @@ Issued (UTC):    2025-11-18 03:50:01
               <div className="step">
                 <div className="step-number">1</div>
                 <div className="step-content">
-                  <h4>Download & Install</h4>
+                  <h4><Download size={18} /> Download & Install</h4>
                   <p>Download the agent for your operating system and install it.</p>
                   <button className="btn btn-primary btn-download" onClick={downloadAgent}>
-                    <span className="download-icon">⬇️</span>
+                    <Download size={18} />
                     Download Agent
                   </button>
                 </div>
@@ -1087,7 +1138,7 @@ Issued (UTC):    2025-11-18 03:50:01
               <div className="step">
                 <div className="step-number">2</div>
                 <div className="step-content">
-                  <h4>Run the Agent</h4>
+                  <h4><Server size={18} /> Run the Agent</h4>
                   <p>After installation, the agent will run in your system tray (taskbar).</p>
                   <div className="agent-info">
                     <div className="info-item">
@@ -1105,7 +1156,7 @@ Issued (UTC):    2025-11-18 03:50:01
               <div className="step">
                 <div className="step-number">3</div>
                 <div className="step-content">
-                  <h4>Manual Connection</h4>
+                  <h4><Settings size={18} /> Manual Connection</h4>
                   <p>Enter connection details below and click "Connect"</p>
                 </div>
               </div>
@@ -1119,7 +1170,7 @@ Issued (UTC):    2025-11-18 03:50:01
                   switchToDemoMode();
                 }}
               >
-                🎭 Use Demo Mode
+                <Theater size={18} /> Use Demo Mode
               </button>
               <button
                 className="btn btn-primary"
@@ -1133,7 +1184,7 @@ Issued (UTC):    2025-11-18 03:50:01
               className="close-instructions"
               onClick={() => setShowAgentInstructions(false)}
             >
-              ×
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -1142,10 +1193,18 @@ Issued (UTC):    2025-11-18 03:50:01
       <div className="main-content">
         <div className="control-panel">
           <div className="card">
-            <h3>Manual Connection Settings</h3>
+            <div className="card-title">
+              <Settings size={20} />
+              <h3>Manual Connection Settings</h3>
+            </div>
 
             <div className="connection-status-display">
               <div className={`status-badge ${getConnectionStatusColor()}`}>
+                {connectionStatus === 'connected' && <Wifi size={14} />}
+                {connectionStatus === 'connecting' && <Loader2 size={14} className="spinning" />}
+                {connectionStatus === 'demo' && <Theater size={14} />}
+                {connectionStatus === 'error' && <AlertCircle size={14} />}
+                {connectionStatus === 'disconnected' && <WifiOff size={14} />}
                 {connectionStatus.toUpperCase()}
               </div>
               {connectionMode === 'demo' && (
@@ -1156,7 +1215,7 @@ Issued (UTC):    2025-11-18 03:50:01
             {connectionMode === 'agent' && (
               <>
                 <div className="form-group">
-                  <label>WebSocket URL</label>
+                  <label><Server size={16} /> WebSocket URL</label>
                   <input
                     type="text"
                     value={customAgentUrl || serverUrl}
@@ -1173,7 +1232,7 @@ Issued (UTC):    2025-11-18 03:50:01
                   </small>
                 </div>
                 <div className="form-group">
-                  <label>Authentication Token</label>
+                  <label><Shield size={16} /> Authentication Token</label>
                   <input
                     type="password"
                     value={token}
@@ -1191,29 +1250,40 @@ Issued (UTC):    2025-11-18 03:50:01
                     className="btn btn-primary"
                     disabled={connectionStatus === 'connecting'}
                   >
-                    {connectionStatus === 'connecting' ? 'Connecting...' :
-                      connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
+                    {connectionStatus === 'connecting' ? (
+                      <>
+                        <Loader2 size={18} className="spinning" /> Connecting...
+                      </>
+                    ) : connectionStatus === 'connected' ? (
+                      <>
+                        <RefreshCw size={18} /> Reconnect
+                      </>
+                    ) : (
+                      <>
+                        <Wifi size={18} /> Connect
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={disconnectWebSocket}
                     className="btn btn-danger"
                     disabled={connectionStatus === 'disconnected' || connectionStatus === 'demo'}
                   >
-                    Disconnect
+                    <WifiOff size={18} /> Disconnect
                   </button>
                   <button
                     onClick={manualDetectAgent}
                     className="btn btn-secondary"
                     disabled={connectionStatus === 'connecting'}
                   >
-                    Detect Agent
+                    <Search size={18} /> Detect Agent
                   </button>
                   <button
                     onClick={sendHealthCheck}
                     className="btn btn-secondary"
                     disabled={!isConnected && connectionMode !== 'demo'}
                   >
-                    Health Check
+                    <ClipboardCheck size={18} /> Health Check
                   </button>
                 </div>
 
@@ -1222,7 +1292,7 @@ Issued (UTC):    2025-11-18 03:50:01
                     onClick={() => setShowAgentInstructions(true)}
                     className="btn-link"
                   >
-                    📥 Need Agent Setup?
+                    <Package size={16} /> Need Agent Setup?
                   </button>
                 </div>
               </>
@@ -1230,19 +1300,19 @@ Issued (UTC):    2025-11-18 03:50:01
 
             {connectionMode === 'demo' && (
               <div className="demo-connection-info">
-                <p>Demo mode is active. All print actions are simulated.</p>
+                <p><Theater size={18} /> Demo mode is active. All print actions are simulated.</p>
                 <div className="button-group">
                   <button
                     onClick={sendHealthCheck}
                     className="btn btn-secondary"
                   >
-                    Demo Health Check
+                    <ClipboardCheck size={18} /> Demo Health Check
                   </button>
                   <button
                     onClick={switchToAgentMode}
                     className="btn btn-primary"
                   >
-                    Switch to Agent Mode
+                    <Server size={18} /> Switch to Agent Mode
                   </button>
                 </div>
               </div>
@@ -1251,14 +1321,17 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="card-header">
-              <h3>Printers</h3>
+              <div className="card-title">
+                <Printer size={20} />
+                <h3>Printers</h3>
+              </div>
               <button
                 onClick={handleRefreshPrinters}
                 className="btn-icon"
                 title="Refresh printers"
                 disabled={!isConnected && connectionMode !== 'demo'}
               >
-                ↻
+                <RefreshCw size={18} />
               </button>
             </div>
 
@@ -1266,11 +1339,11 @@ Issued (UTC):    2025-11-18 03:50:01
               <div className="demo-printer-info">
                 <div className="demo-printer-list">
                   <div className="printer-item demo">
-                    <span className="printer-name">📋 Demo Thermal Printer</span>
+                    <span className="printer-name"><Printer size={16} /> Demo Thermal Printer</span>
                     <span className="printer-status ready">READY</span>
                   </div>
                   <div className="printer-item demo">
-                    <span className="printer-name">🧾 Demo Receipt Printer</span>
+                    <span className="printer-name"><Printer size={16} /> Demo Receipt Printer</span>
                     <span className="printer-status ready">READY</span>
                   </div>
                 </div>
@@ -1296,11 +1369,13 @@ Issued (UTC):    2025-11-18 03:50:01
                 </div>
                 {selectedPrinter && (
                   <div className="selected-printer">
+                    <Printer size={16} />
                     Selected: <strong>{selectedPrinter}</strong>
                   </div>
                 )}
                 {printers.length === 0 && isConnected && (
                   <div className="no-printers">
+                    <AlertTriangle size={16} />
                     <p>No printers found. Make sure printers are connected and drivers are installed.</p>
                   </div>
                 )}
@@ -1310,202 +1385,29 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="queue-header">
-              <h3>Print Queue</h3>
-              <button
-                className="btn-icon"
-                onClick={() => setShowQueueDetails(!showQueueDetails)}
-                title={showQueueDetails ? "Hide details" : "Show details"}
-              >
-                {showQueueDetails ? '▲' : '▼'}
-              </button>
-            </div>
-
-            <div className="queue-status">
-              {/* ─── Header / Stats ───────────────────────── */}
-              <div className="queue-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Queue</span>
-                  <span className="stat-value queue-count">
-                    {queueStatus.queueSize}
-                  </span>
-                </div>
-
-                <div className="stat-item">
-                  <span className="stat-label">Status</span>
-                  <span
-                    className={`stat-value print-status ${queueStatus.isProcessing ? 'printing' : 'idle'
-                      }`}
-                  >
-                    {queueStatus.isProcessing ? '🖨️ Printing…' : '🟢 Idle'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Queue Overview Stats */}
-              <div className="queue-overview">
-                <div className="overview-stats">
-                  <div className="overview-stat">
-                    <span className="stat-label">Total Jobs:</span>
-                    <span className="stat-value">{allJobs.length}</span>
-                  </div>
-                  <div className="overview-stat">
-                    <span className="stat-label">Successful:</span>
-                    <span className="stat-value success">
-                      {allJobs.filter(j => j.status === 'completed').length}
-                    </span>
-                  </div>
-                  <div className="overview-stat">
-                    <span className="stat-label">Failed:</span>
-                    <span className="stat-value failed">
-                      {allJobs.filter(j => j.status === 'failed').length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ─── Job List ─────────────────────────────── */}
-              <div className="job-list">
-                {allJobs.length === 0 && (
-                  <div className="job empty">Queue is empty</div>
-                )}
-
-                {allJobs.map(job => {
-                  const jobType = getJobTypeDisplay(job.type);
-                  const statusDisplay = getJobStatusDisplay(job);
-                  const isStopped = printQueue.current?.isStopped;
-
-                  return (
-                    <div
-                      key={job.id}
-                      className={`job job-${job.__kind} job-status-${job.status} job-type-${jobType.color}`}
-                      title={`ID: ${job.id}\nCreated: ${new Date(job.timestamp).toLocaleTimeString()}`}
-                    >
-                      {/* Left: icon + label */}
-                      <div className="job-main">
-                        {job.__kind === 'current' ? (
-                          <Loader2 className="job-icon spinning" size={16} />
-                        ) : (
-                          <span className="job-icon">{jobType.icon}</span>
-                        )}
-
-                        <div className="job-details">
-                          <span className="job-label">
-                            {jobType.label}
-                            {job.data?.printerName && (
-                              <span className="job-printer"> on {job.data.printerName}</span>
-                            )}
-                          </span>
-                          <span className="job-timestamp">
-                            {new Date(job.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-
-                        <span className={`job-status status-${job.status}`}>
-                          {statusDisplay}
-                        </span>
-                      </div>
-
-                      {/* Right: actions */}
-                      <div className="job-actions">
-                        {job.__kind === 'current' && (
-                          <>
-                            {isStopped ? (
-                              <button
-                                className="icon-btn resume"
-                                onClick={resumeJobs}
-                                title="Resume processing"
-                              >
-                                <Play size={16} />
-                              </button>
-                            ) : (
-                              <button
-                                className="icon-btn stop"
-                                onClick={stopJobs}
-                                title="Stop queue (pauses after current job)"
-                              >
-                                <StopCircle size={16} />
-                              </button>
-                            )}
-
-                            <button
-                              className="icon-btn cancel"
-                              onClick={() => {
-                                cancelCurrentJob();
-                                addLog(`Job ${job.id.substring(0, 8)} terminated`, 'warning');
-                              }}
-                              title="Terminate this job immediately"
-                            >
-                              <XCircle size={16} />
-                            </button>
-                          </>
-                        )}
-
-                        {job.__kind === 'queued' && (
-                          <button
-                            className="icon-btn cancel"
-                            onClick={() => cancelQueuedJob(job.id)}
-                            title="Remove from queue"
-                          >
-                            <XCircle size={16} />
-                          </button>
-                        )}
-
-                        {job.__kind === 'history' && job.status === 'failed' && (
-                          <button
-                            className="icon-btn retry"
-                            onClick={() => {
-                              addLog(`Retry not implemented for job ${job.id.substring(0, 8)}`, 'info');
-                            }}
-                            title="Retry failed job"
-                            disabled
-                          >
-                            <RefreshCw size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Print Delay (ms)</label>
-              <input
-                type="range"
-                min="500"
-                max="3000"
-                step="500"
-                value={printDelay}
-                onChange={(e) => setPrintDelay(parseInt(e.target.value))}
-                className="delay-slider"
-              />
-              <div className="delay-display">
-                <span>{printDelay}ms delay</span>
-                <span className="delay-help">
-                  {printDelay <= 1000 ? 'Fast' :
-                    printDelay <= 2000 ? 'Normal' : 'Slow'}
-                </span>
+              <div className="card-title">
+                <Archive size={20} />
+                <h3>Print Queue</h3>
               </div>
             </div>
 
             <div className="action-buttons">
-              {/* 🖨️ Print Text Button (prints text + barcode derived from text) */}
+              {/* Print Text Button (prints text + barcode derived from text) */}
               <button
                 onClick={handlePrintText}
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
                 className="btn btn-action btn-print"
               >
-                🖨️ Print Text
+                <FileText size={18} /> Print Text
               </button>
 
-              {/* 🧾 Print Barcode Button (prints ONLY demo barcode) */}
+              {/* Print Barcode Button (prints ONLY demo barcode) */}
               <button
                 onClick={handlePrintBarcode}
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
                 className="btn btn-action btn-barcode"
               >
-                🧾 Print Barcode
+                <Barcode size={18} /> Print Barcode
               </button>
 
               <button
@@ -1513,46 +1415,15 @@ Issued (UTC):    2025-11-18 03:50:01
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
                 className="btn btn-action btn-test"
               >
-                Test Print
+                <FlaskConical size={18} /> Test Print
               </button>
               <button
                 onClick={handleOpenCashDrawer}
                 disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
                 className="btn btn-action btn-cash"
               >
-                Open Drawer
+                <DollarSign size={18} /> Open Drawer
               </button>
-
-              <QueueManagementPanel
-                queueStats={{
-                  queue: queueStatus.queueSize,
-                  totalJobs: allJobs.length,
-                  completed: allJobs.filter(j => j.status === 'completed').length,
-                  failed: allJobs.filter(j => j.status === 'failed').length
-                }}
-                jobs={allJobs.map(job => ({
-                  id: job.id,
-                  status: job.status.charAt(0).toUpperCase() + job.status.slice(1), // Capitalize
-                  timestamp: new Date(job.timestamp).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }),
-                  type: job.type || 'print'
-                }))}
-                onGenerateTestJobs={generateTestJobs}
-                onStopJobs={stopJobs}
-                onClearQueue={clearPrintQueue}
-                onPauseJob={(jobId) => {
-                  // Add pause functionality to your PrintQueue class
-                  // You'll need to add this method to PrintQueue class
-                  addLog(`Pausing job ${jobId.substring(0, 8)}`, 'warning');
-                }}
-                onCancelJob={cancelQueuedJob}
-                onResumeQueue={resumeJobs}
-                autoRefresh={autoRefresh}
-                onAutoRefreshChange={setAutoRefresh}
-                isQueueProcessing={queueStatus.isProcessing}
-              />
             </div>
 
             {showQueueDetails && (
@@ -1582,26 +1453,29 @@ Issued (UTC):    2025-11-18 03:50:01
                   onChange={(e) => setAutoRefresh(e.target.checked)}
                   disabled={!isConnected}
                 />
-                Auto-refresh health info (every 5s)
+                <RefreshCw size={16} /> Auto-refresh health info (every 5s)
               </label>
             </div>
           </div>
 
           {connectionMode === 'demo' && (
             <div className="card demo-notice">
-              <h3>🎭 Demo Mode Active</h3>
+              <div className="card-title">
+                <Theater size={20} />
+                <h3>Demo Mode Active</h3>
+              </div>
               <p>All print actions are simulated. Perfect for testing without a printer.</p>
               <div className="demo-features">
                 <div className="feature">
-                  <span className="feature-icon">✅</span>
+                  <Check size={16} className="feature-icon" />
                   <span>Simulated printing</span>
                 </div>
                 <div className="feature">
-                  <span className="feature-icon">✅</span>
+                  <Check size={16} className="feature-icon" />
                   <span>Test receipt generation</span>
                 </div>
                 <div className="feature">
-                  <span className="feature-icon">✅</span>
+                  <Check size={16} className="feature-icon" />
                   <span>Queue management</span>
                 </div>
               </div>
@@ -1609,7 +1483,7 @@ Issued (UTC):    2025-11-18 03:50:01
                 className="btn btn-primary"
                 onClick={switchToAgentMode}
               >
-                Switch to Manual Agent Mode
+                <Server size={18} /> Switch to Manual Agent Mode
               </button>
             </div>
           )}
@@ -1617,10 +1491,13 @@ Issued (UTC):    2025-11-18 03:50:01
 
         <div className="text-panel">
           <div className="card">
-            <h3>Text to Print</h3>
+            <div className="card-title">
+              <FileText size={20} />
+              <h3>Text to Print</h3>
+            </div>
             <div className="text-info">
-              <p><strong>Note:</strong> Changing text will update the barcode printed with "Print Text" button</p>
-              <p><strong>Demo Barcode (fixed):</strong> {DEMO_BARCODE}</p>
+              <p><Info size={16} /> <strong>Note:</strong> Changing text will update the barcode printed with "Print Text" button</p>
+              <p><Barcode size={16} /> <strong>Demo Barcode (fixed):</strong> {DEMO_BARCODE}</p>
             </div>
             <textarea
               value={textToPrint}
@@ -1670,24 +1547,30 @@ Thank you for your business!`);
 
         <div className="status-panel">
           <div className="card">
-            <h3>System Status</h3>
+            <div className="card-title">
+              <Cpu size={20} />
+              <h3>System Status</h3>
+            </div>
             <div className="environment-status">
               <div className="status-item">
                 <span className="status-label">Environment:</span>
                 <span className={`status-value ${isLocalhost ? 'local' : 'hosted'}`}>
-                  {isLocalhost ? 'Local' : 'Hosted'}
+                  {isLocalhost ? <Home size={14} /> : <Globe size={14} />}
+                  {isLocalhost ? ' Local' : ' Hosted'}
                 </span>
               </div>
               <div className="status-item">
                 <span className="status-label">Connection Mode:</span>
                 <span className={`status-value ${connectionMode}`}>
-                  {connectionMode === 'demo' ? 'Demo' : 'Manual Agent'}
+                  {connectionMode === 'demo' ? <Theater size={14} /> : <Server size={14} />}
+                  {connectionMode === 'demo' ? ' Demo' : ' Manual Agent'}
                 </span>
               </div>
               <div className="status-item">
                 <span className="status-label">Agent Detected:</span>
                 <span className={`status-value ${agentDetected ? 'detected' : 'not-detected'}`}>
-                  {agentDetected ? 'Yes ✅' : 'No ❌'}
+                  {agentDetected ? <Check size={14} /> : <X size={14} />}
+                  {agentDetected ? ' Yes' : ' No'}
                 </span>
               </div>
             </div>
@@ -1697,6 +1580,7 @@ Thank you for your business!`);
                 <div className="status-row">
                   <span>Server Status:</span>
                   <span className={`status-badge ${healthInfo.ok ? 'healthy' : 'error'}`}>
+                    {healthInfo.ok ? <Check size={14} /> : <X size={14} />}
                     {healthInfo.ok ? 'Healthy' : 'Error'}
                   </span>
                 </div>
@@ -1706,7 +1590,9 @@ Thank you for your business!`);
                 </div>
                 <div className="status-row">
                   <span>Printers Found:</span>
-                  <span className="printer-count">{healthInfo.totalPrinters}</span>
+                  <span className="printer-count">
+                    <Printer size={14} /> {healthInfo.totalPrinters}
+                  </span>
                 </div>
                 {connectionMode !== 'demo' && healthInfo.defaultPrinter && (
                   <div className="status-row">
@@ -1725,19 +1611,30 @@ Thank you for your business!`);
           </div>
 
           <div className="card">
-            <h3>Activity Log</h3>
+            <div className="card-title">
+              <Bell size={20} />
+              <h3>Activity Log</h3>
+            </div>
             <div className="log-container">
               {logs.length > 0 ? (
                 <ul className="log-list">
                   {logs.map((log) => (
                     <li key={log.id} className={getLogTypeClass(log.type)}>
                       <span className="log-time">[{log.timestamp}]</span>
-                      <span className="log-message">{log.message}</span>
+                      <span className="log-message">
+                        {log.type === 'success' && <Check size={14} />}
+                        {log.type === 'error' && <X size={14} />}
+                        {log.type === 'warning' && <AlertTriangle size={14} />}
+                        {log.type === 'info' && <Info size={14} />}
+                        {log.message}
+                      </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="no-logs">No activity yet</div>
+                <div className="no-logs">
+                  <Info size={16} /> No activity yet
+                </div>
               )}
             </div>
             <div className="log-actions">
@@ -1752,7 +1649,10 @@ Thank you for your business!`);
 
           {lastResponse && (
             <div className="card">
-              <h3>Last Response</h3>
+              <div className="card-title">
+                <FileText size={20} />
+                <h3>Last Response</h3>
+              </div>
               <pre className="response-preview">
                 {JSON.stringify(lastResponse, null, 2)}
               </pre>
@@ -1764,11 +1664,15 @@ Thank you for your business!`);
       <footer className="app-footer">
         <div className="footer-content">
           <p>
-            AaravPOS Print Tester •
+            <Printer size={16} /> AaravPOS Print Tester •
             <span className={`env-indicator ${isLocalhost ? 'local' : 'hosted'}`}>
-              {isLocalhost ? ' 🏠 Local Mode' : ' 🌐 Hosted Mode'}
+              {isLocalhost ? <Home size={14} /> : <Globe size={14} />}
+              {isLocalhost ? ' Local Mode' : ' Hosted Mode'}
             </span>
             • Connection: <span className={`connection-indicator ${getConnectionStatusColor()}`}>
+              {connectionStatus === 'connected' && <Wifi size={14} />}
+              {connectionStatus === 'disconnected' && <WifiOff size={14} />}
+              {connectionStatus === 'demo' && <Theater size={14} />}
               {connectionStatus.toUpperCase()}
             </span>
             {queueStatus.queueSize > 0 && ` • Queue: ${queueStatus.queueSize} jobs`}
@@ -1780,11 +1684,11 @@ Thank you for your business!`);
                 className="btn-link"
                 onClick={() => setShowAgentInstructions(true)}
               >
-                📥 Need help setting up the agent?
+                <Package size={16} /> Need help setting up the agent?
               </button>
             )}
             {connectionMode === 'demo' && (
-              <span>Running in demo mode. Switch to agent mode for physical printing.</span>
+              <span><Theater size={16} /> Running in demo mode. Switch to agent mode for physical printing.</span>
             )}
           </p>
           {renderEnvironmentInfo()}
