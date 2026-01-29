@@ -1360,7 +1360,7 @@ Issued (UTC):    2025-11-18 03:50:01
             <div className="queue-header">
               <div className="card-title">
                 <Archive size={20} />
-                <h3>Print Queue</h3>
+                <h3>Printer Actions</h3>
               </div>
             </div>
 
