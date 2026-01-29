@@ -1023,8 +1023,8 @@ Issued (UTC):    2025-11-18 03:50:01
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="header-title">
-          <Printer size={24} />
+        <div className="header-title d-flex">
+          <Printer size={24} className='mr'/>
           <h1>AaravPOS Print Server Tester</h1>
         </div>
         <div className="environment-badge">
@@ -1087,8 +1087,8 @@ Issued (UTC):    2025-11-18 03:50:01
       {showAgentInstructions && (
         <div className="agent-instructions-modal">
           <div className="instructions-card">
-            <div className="instructions-header">
-              <Package size={24} />
+            <div className="instructions-header d-flex">
+              <Package size={24} className='mr'/>
               <h2>AaravPOS Agent Setup</h2>
             </div>
             <p className="instructions-intro">
@@ -1166,8 +1166,8 @@ Issued (UTC):    2025-11-18 03:50:01
       <div className="main-content">
         <div className="control-panel">
           <div className="card">
-            <div className="card-title">
-              <Settings size={20} />
+            <div className="card-title d-flex">
+              <Settings size={20} className='mr'/>
               <h3>Manual Connection Settings</h3>
             </div>
 
@@ -1177,7 +1177,7 @@ Issued (UTC):    2025-11-18 03:50:01
                 {connectionStatus === 'connecting' && <Loader2 size={14} className="spinning" />}
                 {connectionStatus === 'demo' && <Theater size={14} />}
                 {connectionStatus === 'error' && <AlertCircle size={14} />}
-                {connectionStatus === 'disconnected' && <WifiOff size={14} />}
+                {connectionStatus === 'disconnected' && <WifiOff size={14} className='mr'/>}
                 {connectionStatus.toUpperCase()}
               </div>
               {connectionMode === 'demo' && (
@@ -1294,8 +1294,8 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="card-header">
-              <div className="card-title">
-                <Printer size={20} />
+              <div className="card-title d-flex">
+                <Printer size={20} className='mr'/>
                 <h3>Printers</h3>
               </div>
               <button
@@ -1358,8 +1358,8 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="queue-header">
-              <div className="card-title">
-                <Archive size={20} />
+              <div className="card-title d-flex">
+                <Archive size={20} className='mr'/>
                 <h3>Printer Actions</h3>
               </div>
             </div>
@@ -1464,8 +1464,8 @@ Issued (UTC):    2025-11-18 03:50:01
 
         <div className="text-panel">
           <div className="card">
-            <div className="card-title">
-              <FileText size={20} />
+            <div className="card-title d-flex">
+              <FileText size={20} className='mr'/>
               <h3>Text to Print</h3>
             </div>
             <div className="text-info">
@@ -1520,8 +1520,8 @@ Thank you for your business!`);
 
         <div className="status-panel">
           <div className="card">
-            <div className="card-title">
-              <Cpu size={20} />
+            <div className="card-title d-flex">
+              <Cpu size={20} className='mr'/>
               <h3>System Status</h3>
             </div>
             <div className="environment-status">
@@ -1584,8 +1584,8 @@ Thank you for your business!`);
           </div>
 
           <div className="card">
-            <div className="card-title">
-              <Bell size={20} />
+            <div className="card-title d-flex">
+              <Bell size={20} className='mr'/>
               <h3>Activity Log</h3>
             </div>
             <div className="log-container">

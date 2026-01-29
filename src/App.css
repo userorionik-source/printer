@@ -1350,6 +1350,16 @@ body {
   cursor: pointer;
 }
 
+.d-flex {
+  display: inline-flex;
+  gap: 16;
+  line-height: 1;
+}
+
+.mr {
+  margin-right: 7px;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
