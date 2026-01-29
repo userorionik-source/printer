@@ -716,44 +716,22 @@ Issued (UTC):    2025-11-18 03:50:01
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
   // Print Text Button Handler - Prints receipt text + barcode derived from text
-  const handlePrintText = useCallback(async () => {
+  // Print Text Button Handler - Prints receipt text with barcode inserted at BARCODE position
+  const handlePrintText = useCallback(() => {
     if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('Please select a printer first', 'warning');
       return;
     }
 
-    // Extract barcode from current text
-    const barcodeValue = extractBarcodeFromText(textToPrint);
-
-    // Create job for printing text
-    const printTextJob = async () => {
+    // Create a single job that combines text and barcode
+    const printCombinedJob = async () => {
       const reqId = requestId.toString();
       setRequestId(prev => prev + 1);
 
       return new Promise((resolve, reject) => {
-        if (sendMessage({
-          type: 'print_text',
-          requestId: reqId,
-          payload: {
-            printerName: selectedPrinter || 'Demo Printer',
-            text: textToPrint
-          }
-        })) {
-          addLog(`Printing receipt text to ${selectedPrinter || 'Demo Printer'}...`, 'info');
-          resolve();
-        } else {
-          addLog('Not connected to server', 'error');
-          reject(new Error('Not connected'));
-        }
-      });
-    };
+        // Extract barcode from text using the helper function
+        const barcodeValue = extractBarcodeFromText(textToPrint);
 
-    // Create job for printing barcode (derived from text)
-    const printBarcodeJob = async () => {
-      const reqId = (parseInt(requestId) + 1).toString();
-      setRequestId(prev => prev + 1);
-
-      return new Promise((resolve, reject) => {
         if (sendMessage({
           type: 'print_barcode',
           requestId: reqId,
@@ -761,10 +739,10 @@ Issued (UTC):    2025-11-18 03:50:01
             printerName: selectedPrinter || 'Demo Printer',
             barcode: barcodeValue,
             format: 'CODE128',
-            receiptText: textToPrint // Include receipt text for combined print
+            receiptText: textToPrint // Send the entire text for server to parse
           }
         })) {
-          addLog(`Printing barcode derived from text: ${barcodeValue}`, 'info');
+          addLog(`Printing combined receipt with barcode inserted at BARCODE position: ${barcodeValue}`, 'info');
           resolve();
         } else {
           addLog('Not connected to server', 'error');
@@ -774,21 +752,16 @@ Issued (UTC):    2025-11-18 03:50:01
     };
 
     if (printQueue.current) {
-      // Add text print job
       const textJob = printQueue.current.add(
-        printTextJob,
+        printCombinedJob,
         JOB_TYPES.PRINT,
-        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Receipt Text' }
+        {
+          printerName: selectedPrinter || 'Demo Printer',
+          type: 'Print Combined Receipt',
+          hasBarcode: true
+        }
       );
-      addLog(`Receipt text job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
-
-      // Add barcode print job (after text)
-      const barcodeJob = printQueue.current.add(
-        printBarcodeJob,
-        JOB_TYPES.BARCODE,
-        { printerName: selectedPrinter || 'Demo Printer', type: 'Print Derived Barcode' }
-      );
-      addLog(`Derived barcode job added to queue (ID: ${barcodeJob.id.substring(0, 8)})`, 'info');
+      addLog(`Combined receipt job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
     }
   }, [selectedPrinter, connectionMode, textToPrint, requestId, addLog, sendMessage, extractBarcodeFromText]);
 
