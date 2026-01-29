@@ -33,6 +33,9 @@ ${DEMO_BARCODE}
 Thank you for using AaravPOS!
 `;
 
+const BARCODE_MAX_LEN = 22;
+const INVALID_CHAR_REGEX = /[{]/;
+
 // Print Queue class with enhanced functionality
 class PrintQueue {
   constructor(onQueueUpdate) {
@@ -187,17 +190,7 @@ function App() {
   const isProduction = process.env.NODE_ENV === 'production';
   const deployUrl = window.location.origin;
 
-  // Log environment info in debug mode
-  useEffect(() => {
-    if (ENV_CONFIG.enableDebugMode) {
-      console.log('Environment:', {
-        isLocalhost,
-        isProduction,
-        deployUrl,
-        nodeEnv: process.env.NODE_ENV
-      });
-    }
-  }, [isLocalhost, isProduction, deployUrl]);
+  const [barcodeError, setBarcodeError] = useState('');
 
   // State - NO AUTO-CONNECT INITIALIZATION
   const [agentDetected, setAgentDetected] = useState(false);
@@ -273,6 +266,27 @@ Issued (UTC):    2025-11-18 03:50:01
   const printQueue = useRef(null);
   const lastPrintTimeRef = useRef(0);
 
+  // Barcode validation function
+  const validateBarcode = useCallback((barcode) => {
+    if (barcode.includes('{')) {
+      return {
+        isValid: false,
+        message: "Invalid character '{' in barcode",
+        tooltip: "Barcode contains invalid character '{'. Please remove it."
+      };
+    }
+    
+    if (barcode.length > BARCODE_MAX_LEN) {
+      return {
+        isValid: false,
+        message: `Barcode exceeds ${BARCODE_MAX_LEN} characters`,
+        tooltip: `Barcode is ${barcode.length} characters. Maximum allowed is ${BARCODE_MAX_LEN}.`
+      };
+    }
+    
+    return { isValid: true, message: '', tooltip: '' };
+  }, []);
+
   // Safe allJobs calculation with array checks
   const allJobs = [
     // Current job (if exists)
@@ -330,6 +344,42 @@ Issued (UTC):    2025-11-18 03:50:01
 
     return DEMO_BARCODE; // Fallback to demo barcode
   }, []);
+
+  // Get barcode validation for current text - NOW DEFINED AFTER textToPrint
+  const getBarcodeValidation = useCallback(() => {
+    const barcode = extractBarcodeFromText(textToPrint);
+    return validateBarcode(barcode);
+  }, [textToPrint, extractBarcodeFromText, validateBarcode]);
+
+  // Get barcode character count
+  const getBarcodeCharacterCount = useCallback(() => {
+    const barcode = extractBarcodeFromText(textToPrint);
+    return {
+      count: barcode.length,
+      isValid: barcode.length <= BARCODE_MAX_LEN && !barcode.includes('{')
+    };
+  }, [textToPrint, extractBarcodeFromText]);
+
+  // Log environment info in debug mode
+  useEffect(() => {
+    if (ENV_CONFIG.enableDebugMode) {
+      console.log('Environment:', {
+        isLocalhost,
+        isProduction,
+        deployUrl,
+        nodeEnv: process.env.NODE_ENV
+      });
+    }
+
+    const barcode = extractBarcodeFromText(textToPrint);
+    const validation = validateBarcode(barcode);
+    
+    if (!validation.isValid) {
+      setBarcodeError(validation.message);
+    } else {
+      setBarcodeError('');
+    }
+  }, [isLocalhost, isProduction, deployUrl, textToPrint, extractBarcodeFromText, validateBarcode]);
 
   const stopJobs = useCallback(() => {
     if (printQueue.current) {
@@ -715,11 +765,19 @@ Issued (UTC):    2025-11-18 03:50:01
     }
   }, [selectedPrinter, connectionMode, requestId, addLog, sendMessage]);
 
-  // Print Text Button Handler - Prints receipt text + barcode derived from text
   // Print Text Button Handler - Prints receipt text with barcode inserted at BARCODE position
   const handlePrintText = useCallback(() => {
     if (!selectedPrinter && connectionMode !== 'demo') {
       addLog('Please select a printer first', 'warning');
+      return;
+    }
+
+    // Validate barcode before proceeding
+    const barcode = extractBarcodeFromText(textToPrint);
+    const validation = validateBarcode(barcode);
+    
+    if (!validation.isValid) {
+      addLog(`Cannot print: ${validation.message}`, 'error');
       return;
     }
 
@@ -729,20 +787,17 @@ Issued (UTC):    2025-11-18 03:50:01
       setRequestId(prev => prev + 1);
 
       return new Promise((resolve, reject) => {
-        // Extract barcode from text using the helper function
-        const barcodeValue = extractBarcodeFromText(textToPrint);
-
         if (sendMessage({
           type: 'print_barcode',
           requestId: reqId,
           payload: {
             printerName: selectedPrinter || 'Demo Printer',
-            barcode: barcodeValue,
+            barcode: barcode,
             format: 'CODE128',
             receiptText: textToPrint // Send the entire text for server to parse
           }
         })) {
-          addLog(`Printing combined receipt with barcode inserted at BARCODE position: ${barcodeValue}`, 'info');
+          addLog(`Printing combined receipt with barcode: ${barcode}`, 'info');
           resolve();
         } else {
           addLog('Not connected to server', 'error');
@@ -758,12 +813,13 @@ Issued (UTC):    2025-11-18 03:50:01
         {
           printerName: selectedPrinter || 'Demo Printer',
           type: 'Print Combined Receipt',
-          hasBarcode: true
+          hasBarcode: true,
+          barcodeValue: barcode
         }
       );
       addLog(`Combined receipt job added to queue (ID: ${textJob.id.substring(0, 8)})`, 'info');
     }
-  }, [selectedPrinter, connectionMode, textToPrint, requestId, addLog, sendMessage, extractBarcodeFromText]);
+  }, [selectedPrinter, connectionMode, textToPrint, requestId, addLog, sendMessage, extractBarcodeFromText, validateBarcode]);
 
   const handleTestPrint = useCallback(async () => {
     if (!selectedPrinter && connectionMode !== 'demo') {
@@ -1020,11 +1076,14 @@ Issued (UTC):    2025-11-18 03:50:01
     };
   }, [autoRefresh, isConnected, sendHealthCheck]);
 
+  // Calculate validation for demo barcode
+  const demoBarcodeValidation = validateBarcode(DEMO_BARCODE);
+
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="header-title d-flex">
-          <Printer size={24} className='mr'/>
+        <div className="header-title">
+          <Printer size={24} />
           <h1>AaravPOS Print Server Tester</h1>
         </div>
         <div className="environment-badge">
@@ -1087,8 +1146,8 @@ Issued (UTC):    2025-11-18 03:50:01
       {showAgentInstructions && (
         <div className="agent-instructions-modal">
           <div className="instructions-card">
-            <div className="instructions-header d-flex">
-              <Package size={24} className='mr'/>
+            <div className="instructions-header">
+              <Package size={24} />
               <h2>AaravPOS Agent Setup</h2>
             </div>
             <p className="instructions-intro">
@@ -1166,8 +1225,8 @@ Issued (UTC):    2025-11-18 03:50:01
       <div className="main-content">
         <div className="control-panel">
           <div className="card">
-            <div className="card-title d-flex">
-              <Settings size={20} className='mr'/>
+            <div className="card-title">
+              <Settings size={20} />
               <h3>Manual Connection Settings</h3>
             </div>
 
@@ -1177,7 +1236,7 @@ Issued (UTC):    2025-11-18 03:50:01
                 {connectionStatus === 'connecting' && <Loader2 size={14} className="spinning" />}
                 {connectionStatus === 'demo' && <Theater size={14} />}
                 {connectionStatus === 'error' && <AlertCircle size={14} />}
-                {connectionStatus === 'disconnected' && <WifiOff size={14} className='mr'/>}
+                {connectionStatus === 'disconnected' && <WifiOff size={14} />}
                 {connectionStatus.toUpperCase()}
               </div>
               {connectionMode === 'demo' && (
@@ -1294,8 +1353,8 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="card-header">
-              <div className="card-title d-flex">
-                <Printer size={20} className='mr'/>
+              <div className="card-title">
+                <Printer size={20} />
                 <h3>Printers</h3>
               </div>
               <button
@@ -1358,8 +1417,8 @@ Issued (UTC):    2025-11-18 03:50:01
 
           <div className="card">
             <div className="queue-header">
-              <div className="card-title d-flex">
-                <Archive size={20} className='mr'/>
+              <div className="card-title">
+                <Archive size={20} />
                 <h3>Printer Actions</h3>
               </div>
             </div>
@@ -1368,8 +1427,9 @@ Issued (UTC):    2025-11-18 03:50:01
               {/* Print Text Button (prints text + barcode derived from text) */}
               <button
                 onClick={handlePrintText}
-                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected || !getBarcodeValidation().isValid}
                 className="btn btn-action btn-print"
+                title={!getBarcodeValidation().isValid ? getBarcodeValidation().tooltip : "Print text with embedded barcode"}
               >
                 <FileText size={18} /> Print Text
               </button>
@@ -1377,8 +1437,9 @@ Issued (UTC):    2025-11-18 03:50:01
               {/* Print Barcode Button (prints ONLY demo barcode) */}
               <button
                 onClick={handlePrintBarcode}
-                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected}
+                disabled={(!selectedPrinter && connectionMode !== 'demo') || !isConnected || !demoBarcodeValidation.isValid}
                 className="btn btn-action btn-barcode"
+                title={!demoBarcodeValidation.isValid ? demoBarcodeValidation.tooltip : "Print only the demo barcode"}
               >
                 <Barcode size={18} /> Print Barcode
               </button>
@@ -1464,13 +1525,18 @@ Issued (UTC):    2025-11-18 03:50:01
 
         <div className="text-panel">
           <div className="card">
-            <div className="card-title d-flex">
-              <FileText size={20} className='mr'/>
+            <div className="card-title">
+              <FileText size={20} />
               <h3>Text to Print</h3>
             </div>
             <div className="text-info">
               <p><Info size={16} /> <strong>Note:</strong> Changing text will update the barcode printed with "Print Text" button</p>
               <p><Barcode size={16} /> <strong>Demo Barcode (fixed):</strong> {DEMO_BARCODE}</p>
+              {!demoBarcodeValidation.isValid && (
+                <div className="barcode-error-box demo-error">
+                  <AlertTriangle size={14} /> {demoBarcodeValidation.message}
+                </div>
+              )}
             </div>
             <textarea
               value={textToPrint}
@@ -1484,6 +1550,17 @@ Issued (UTC):    2025-11-18 03:50:01
               <span>Lines: {textToPrint.split('\n').length}</span>
               {connectionMode === 'demo' && <span className="demo-badge">DEMO</span>}
             </div>
+            
+            {barcodeError && (
+              <div className="barcode-error-box">
+                <AlertTriangle size={14} /> {barcodeError}
+              </div>
+            )}
+            
+            <div className={`barcode-counter ${getBarcodeCharacterCount().isValid ? '' : getBarcodeCharacterCount().count > BARCODE_MAX_LEN ? 'error' : 'warning'}`}>
+              Barcode: {getBarcodeCharacterCount().count}/{BARCODE_MAX_LEN} characters
+            </div>
+            
             <div className="text-actions">
               <button
                 className="btn btn-sm"
@@ -1520,8 +1597,8 @@ Thank you for your business!`);
 
         <div className="status-panel">
           <div className="card">
-            <div className="card-title d-flex">
-              <Cpu size={20} className='mr'/>
+            <div className="card-title">
+              <Cpu size={20} />
               <h3>System Status</h3>
             </div>
             <div className="environment-status">
@@ -1584,8 +1661,8 @@ Thank you for your business!`);
           </div>
 
           <div className="card">
-            <div className="card-title d-flex">
-              <Bell size={20} className='mr'/>
+            <div className="card-title">
+              <Bell size={20} />
               <h3>Activity Log</h3>
             </div>
             <div className="log-container">

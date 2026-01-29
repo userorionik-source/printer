@@ -1360,6 +1360,132 @@ body {
   margin-right: 7px;
 }
 
+/* Barcode Error Styles */
+.barcode-error-box {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-left: 4px solid #e53e3e;
+  color: #742a2a;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.barcode-error-box.demo-error {
+  background: #fffaf0;
+  border: 1px solid #feebc8;
+  border-left: 4px solid #dd6b20;
+  color: #7b341e;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Disabled button with tooltip styles */
+.btn[disabled] {
+  position: relative;
+  cursor: not-allowed;
+}
+
+.btn[disabled]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  margin-bottom: 5px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn[disabled]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #333;
+  margin-bottom: -5px;
+  z-index: 1001;
+}
+
+/* Enhanced text-info styles */
+.text-info {
+  margin-bottom: 15px;
+}
+
+.text-info p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.text-info strong {
+  color: #2d3748;
+}
+
+/* Barcode character counter */
+.barcode-counter {
+  font-size: 12px;
+  color: #718096;
+  margin-top: 4px;
+  padding-left: 22px;
+  /* Align with info icon */
+}
+
+.barcode-counter.warning {
+  color: #dd6b20;
+}
+
+.barcode-counter.error {
+  color: #e53e3e;
+  font-weight: bold;
+}
+
+/* Update the existing button styles for better disabled state */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+}
+
+.btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Specific disabled styles for print buttons */
+.btn-print:disabled,
+.btn-barcode:disabled {
+  background: #cbd5e0 !important;
+  color: #718096 !important;
+  border-color: #cbd5e0 !important;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
